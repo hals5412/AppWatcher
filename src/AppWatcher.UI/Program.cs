@@ -13,6 +13,7 @@ internal static class Program
         var config = configService.LoadAsync().GetAwaiter().GetResult();
         Localization.Apply(config.Global.Language);
         ApplicationConfiguration.Initialize();
+        Application.SetDefaultFont(new System.Drawing.Font("Segoe UI", 10F));
 
         if (args.Any(a => string.Equals(a, "--install-startup", StringComparison.OrdinalIgnoreCase)))
         {

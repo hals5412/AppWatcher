@@ -2,9 +2,9 @@
 
 [日本語 README](README.ja.md) | English
 
-AppWatcher is a lightweight Windows supervisor for long-running desktop applications. It is designed for applications such as **TVRock**, **TVTest**, Libre Hardware Monitor, recording utilities, and other software that should normally stay running.
+AppWatcher is a lightweight Windows supervisor for long-running desktop applications that should normally stay running.
 
-> Status: **v0.1.0-alpha.6 / development build**. Core monitoring, Japanese/English UI, coordinated shutdown/restart, duplicate-registration prevention, and normal/elevated host IPC are implemented. Continue runtime testing before replacing an existing watchdog in production.
+> Status: **v0.1.0-alpha.7 / development build**. Core monitoring, Japanese/English UI, coordinated shutdown/restart, duplicate-registration prevention, and normal/elevated host IPC are implemented. Continue runtime testing before replacing an existing watchdog in production.
 
 ## Design goals
 
@@ -19,7 +19,7 @@ AppWatcher is a lightweight Windows supervisor for long-running desktop applicat
 - Do **not** place monitored applications in a Windows Job Object by default.
 - Do **not** terminate child processes by default.
 
-The last three points are deliberate compatibility requirements for programs such as TVRock that may launch TVTest or other GUI child processes. A program started by AppWatcher should behave as closely as practical to one launched normally from the logged-on Windows desktop.
+The last three points are deliberate compatibility requirements for desktop applications that may launch other GUI child processes. A program started by AppWatcher should behave as closely as practical to one launched normally from the logged-on Windows desktop.
 
 ## Components
 
@@ -74,15 +74,7 @@ Internal state names, event codes, and reason codes remain language-neutral so l
 
 For a normal application AppWatcher uses the logged-on user's interactive token and normal desktop. The launch code intentionally does **not** use `CREATE_NO_WINDOW`, `DETACHED_PROCESS`, a hidden desktop, a service, or a Job Object.
 
-The default child-process policy is **Unmanaged**. For example:
-
-```text
-AppWatcher.Agent
-  └─ TVRock
-       └─ TVTest
-```
-
-AppWatcher monitors TVRock without taking ownership of TVTest. TVTest should therefore be able to display normally on the desktop. This behavior is a mandatory manual test before the first stable release.
+The default child-process policy is **Unmanaged**. If a monitored application launches another GUI process, AppWatcher does not take ownership of that child process by default. The child application should therefore be able to display and continue running normally on the logged-on desktop. This behavior is a mandatory manual test before the first stable release.
 
 ## Requirements
 

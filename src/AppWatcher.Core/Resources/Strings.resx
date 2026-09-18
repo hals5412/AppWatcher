@@ -772,4 +772,59 @@ Run Tools &gt; Install / repair startup tasks once to register the elevated help
   </data>
   <data name="Reason_ConfigurationReloadPending" xml:space="preserve">
     <value>Waiting for configuration reload</value>
+  </data>
+  <data name="Reason_ProcessStarted" xml:space="preserve">
+    <value>Process started</value>
+  </data>
+  <data name="StartupTaskStatusMenu" xml:space="preserve">
+    <value>Startup task status...</value>
+  </data>
+  <data name="StartupTaskStatusTitle" xml:space="preserve">
+    <value>AppWatcher startup tasks</value>
+  </data>
+  <data name="StartupTaskAgentLabel" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="StartupTaskElevatedLabel" xml:space="preserve">
+    <value>Elevated Helper</value>
+  </data>
+  <data name="StartupTaskEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="StartupTaskDisabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="StartupTaskStateUnknown" xml:space="preserve">
+    <value>Unknown state</value>
+  </data>
+  <data name="StartupTaskStateDisabled" xml:space="preserve">
+    <value>Task disabled</value>
+  </data>
+  <data name="StartupTaskStateQueued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="StartupTaskStateReady" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="StartupTaskStateRunning" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="StartupTaskPathMatches" xml:space="preserve">
+    <value>Executable path matches this AppWatcher folder.</value>
+  </data>
+  <data name="StartupTaskPathMismatch" xml:space="preserve">
+    <value>WARNING: Executable path differs from this AppWatcher folder. Run Install / repair startup tasks.</value>
+  </data>
+  <data name="StartupTaskInstalledFormat" xml:space="preserve">
+    <value>{0}: Registered / {1} / {2}
+Executable: {3}
+{4}
+Last task result: {5}</value>
+  </data>
+  <data name="StartupTaskNotInstalledFormat" xml:space="preserve">
+    <value>{0}: Not registered</value>
+  </data>
+  <data name="StartupTaskErrorFormat" xml:space="preserve">
+    <value>{0}: Could not read task status
+{1}</value>
   </data></root>

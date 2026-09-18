@@ -74,6 +74,13 @@ public sealed class GlobalSettings
     public bool CheckForUpdates { get; set; } = false;
     [JsonPropertyName("uiLanguage")]
     public UiLanguage Language { get; set; } = UiLanguage.Auto;
+    public Dictionary<string, DashboardColumnLayout> DashboardColumns { get; set; } = [];
+}
+
+public sealed class DashboardColumnLayout
+{
+    public int Width { get; set; }
+    public int DisplayIndex { get; set; }
 }
 
 public sealed class ApplicationDefinition

@@ -772,4 +772,59 @@ AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監�
   </data>
   <data name="Reason_ConfigurationReloadPending" xml:space="preserve">
     <value>設定の再読み込み待ち</value>
+  </data>
+  <data name="Reason_ProcessStarted" xml:space="preserve">
+    <value>プロセス起動</value>
+  </data>
+  <data name="StartupTaskStatusMenu" xml:space="preserve">
+    <value>自動起動タスクの状態...</value>
+  </data>
+  <data name="StartupTaskStatusTitle" xml:space="preserve">
+    <value>AppWatcher 自動起動タスク</value>
+  </data>
+  <data name="StartupTaskAgentLabel" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="StartupTaskElevatedLabel" xml:space="preserve">
+    <value>管理者Helper</value>
+  </data>
+  <data name="StartupTaskEnabled" xml:space="preserve">
+    <value>有効</value>
+  </data>
+  <data name="StartupTaskDisabled" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="StartupTaskStateUnknown" xml:space="preserve">
+    <value>状態不明</value>
+  </data>
+  <data name="StartupTaskStateDisabled" xml:space="preserve">
+    <value>タスク無効</value>
+  </data>
+  <data name="StartupTaskStateQueued" xml:space="preserve">
+    <value>待機中</value>
+  </data>
+  <data name="StartupTaskStateReady" xml:space="preserve">
+    <value>準備完了</value>
+  </data>
+  <data name="StartupTaskStateRunning" xml:space="preserve">
+    <value>実行中</value>
+  </data>
+  <data name="StartupTaskPathMatches" xml:space="preserve">
+    <value>実行ファイルのパスは現在のAppWatcherフォルダと一致しています。</value>
+  </data>
+  <data name="StartupTaskPathMismatch" xml:space="preserve">
+    <value>警告: 実行ファイルのパスが現在のAppWatcherフォルダと異なります。「自動起動タスクをインストール／修復...」を実行してください。</value>
+  </data>
+  <data name="StartupTaskInstalledFormat" xml:space="preserve">
+    <value>{0}: 登録済み / {1} / {2}
+実行ファイル: {3}
+{4}
+最終結果: {5}</value>
+  </data>
+  <data name="StartupTaskNotInstalledFormat" xml:space="preserve">
+    <value>{0}: 未登録</value>
+  </data>
+  <data name="StartupTaskErrorFormat" xml:space="preserve">
+    <value>{0}: タスク状態を取得できません
+{1}</value>
   </data></root>

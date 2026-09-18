@@ -3,6 +3,18 @@ using System.Security.Principal;
 
 namespace AppWatcher.UI;
 
+internal sealed record StartupTaskInfo(
+    bool Installed,
+    bool Enabled,
+    int State,
+    int LastTaskResult,
+    string? ExecutablePath,
+    string? Error = null);
+
+internal sealed record StartupTasksStatus(
+    StartupTaskInfo Agent,
+    StartupTaskInfo Elevated);
+
 internal static class TaskSchedulerInstaller
 {
     private const int TaskCreateOrUpdate = 6;
@@ -50,6 +62,75 @@ internal static class TaskSchedulerInstaller
         TryRun(folder, "Elevated");
 
         return Localization.T("StartupInstallSuccess");
+    }
+
+    public static StartupTasksStatus GetStatus()
+    {
+        try
+        {
+            var serviceType = Type.GetTypeFromProgID("Schedule.Service");
+            if (serviceType is null)
+            {
+                var unavailable = new StartupTaskInfo(
+                    false, false, 0, 0, null, Localization.T("TaskSchedulerUnavailable"));
+                return new StartupTasksStatus(unavailable, unavailable);
+            }
+
+            dynamic service = Activator.CreateInstance(serviceType)
+                              ?? throw new InvalidOperationException(Localization.T("TaskSchedulerCreateFailed"));
+            service.Connect();
+
+            dynamic folder;
+            try
+            {
+                folder = service.GetFolder("\\AppWatcher");
+            }
+            catch
+            {
+                var missing = new StartupTaskInfo(false, false, 0, 0, null);
+                return new StartupTasksStatus(missing, missing);
+            }
+
+            return new StartupTasksStatus(
+                ReadStatus(folder, "Agent"),
+                ReadStatus(folder, "Elevated"));
+        }
+        catch (Exception ex)
+        {
+            var failed = new StartupTaskInfo(false, false, 0, 0, null, ex.Message);
+            return new StartupTasksStatus(failed, failed);
+        }
+    }
+
+    private static StartupTaskInfo ReadStatus(dynamic folder, string taskName)
+    {
+        try
+        {
+            dynamic task = folder.GetTask(taskName);
+            string? executablePath = null;
+
+            try
+            {
+                dynamic definition = task.Definition;
+                dynamic action = definition.Actions.Item(1);
+                executablePath = action.Path as string;
+            }
+            catch
+            {
+                // Keep the task status usable even if an unexpected action type is present.
+            }
+
+            return new StartupTaskInfo(
+                true,
+                (bool)task.Enabled,
+                (int)task.State,
+                (int)task.LastTaskResult,
+                executablePath);
+        }
+        catch
+        {
+            return new StartupTaskInfo(false, false, 0, 0, null);
+        }
     }
 
     public static (bool Agent, bool Elevated) TryStartRegisteredHosts() =>

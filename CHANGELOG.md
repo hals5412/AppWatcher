@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.7
+
+- Increased the default UI font and dashboard control/row sizing for better readability.
+- Persisted dashboard column widths and order in config.json.
+- Added Tools > Startup task status to verify Agent/Elevated registration, state, executable path and last task result.
+- Localized the ProcessStarted reason shown in the dashboard.
+- Removed product-specific monitoring examples from the English and Japanese READMEs.
 ## 0.1.0-alpha.6
 
 - Fixed IPC startup regression that could leave both Agent and Elevated Helper shown as offline while their processes were running.

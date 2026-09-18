@@ -19,6 +19,8 @@ internal sealed class MainForm : Form
 
     private HostSnapshot? _normalHost;
     private HostSnapshot? _adminHost;
+    private bool _columnLayoutLoaded;
+    private bool _columnLayoutDirty;
 
     public MainForm()
     {
@@ -33,7 +35,7 @@ internal sealed class MainForm : Form
         MainMenuStrip = menu;
 
         _hostStatus.Dock = DockStyle.Fill;
-        _hostStatus.Padding = new Padding(8, 6, 8, 0);
+        _hostStatus.Padding = new Padding(8, 8, 8, 0);
 
         ConfigureGrid();
 
@@ -41,7 +43,7 @@ internal sealed class MainForm : Form
 
         _summary.AutoSize = false;
         _summary.Dock = DockStyle.Fill;
-        _summary.Padding = new Padding(8, 5, 8, 0);
+        _summary.Padding = new Padding(8, 7, 8, 0);
 
         // Keep the grid in its own layout row. With several independently docked
         // controls, WinForms z-order can otherwise cover the column header row.
@@ -54,10 +56,10 @@ internal sealed class MainForm : Form
             Padding = Padding.Empty
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
         layout.Controls.Add(_hostStatus, 0, 0);
         layout.Controls.Add(_grid, 0, 1);
         layout.Controls.Add(bottom, 0, 2);
@@ -76,6 +78,7 @@ internal sealed class MainForm : Form
         _lifecycleTimer.Start();
         Shown += async (_, _) =>
         {
+            await LoadColumnLayoutAsync();
             await EnsureNormalAgentStartedAsync();
             await EnsureConfiguredHostsStartedAsync();
             await RefreshDashboardAsync();
@@ -83,6 +86,7 @@ internal sealed class MainForm : Form
         };
         FormClosed += (_, _) =>
         {
+            SaveColumnLayoutIfNeeded();
             _refreshTimer.Stop();
             _refreshTimer.Dispose();
             _lifecycleTimer.Stop();
@@ -107,6 +111,7 @@ internal sealed class MainForm : Form
         tools.DropDownItems.Add(Localization.T("Settings"), null, async (_, _) => await OpenSettingsAsync());
         tools.DropDownItems.Add(new ToolStripSeparator());
         tools.DropDownItems.Add(Localization.T("InstallRepairStartupTasks"), null, (_, _) => Program.RequestStartupInstallation(this));
+        tools.DropDownItems.Add(Localization.T("StartupTaskStatusMenu"), null, (_, _) => ShowStartupTaskStatus());
         tools.DropDownItems.Add(Localization.T("StartNormalAgentNow"), null, (_, _) => StartHost("AppWatcher.Agent.exe", elevated: false));
         tools.DropDownItems.Add(Localization.T("StartElevatedHelperNow"), null, (_, _) => StartHost("AppWatcher.Elevated.exe", elevated: true));
         tools.DropDownItems.Add(new ToolStripSeparator());
@@ -140,8 +145,11 @@ internal sealed class MainForm : Form
         _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
         _grid.RowHeadersVisible = false;
         _grid.ColumnHeadersVisible = true;
-        _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        _grid.ColumnHeadersHeight = 32;
         _grid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
+        _grid.RowTemplate.Height = 30;
+        _grid.DefaultCellStyle.Padding = new Padding(2, 1, 2, 1);
         _grid.AllowUserToResizeColumns = true;
         _grid.AllowUserToOrderColumns = true;
         _grid.ScrollBars = ScrollBars.Both;
@@ -156,6 +164,14 @@ internal sealed class MainForm : Form
         _grid.CellDoubleClick += async (_, e) =>
         {
             if (e.RowIndex >= 0) await EditSelectedAsync();
+        };
+        _grid.ColumnWidthChanged += (_, _) =>
+        {
+            if (_columnLayoutLoaded) _columnLayoutDirty = true;
+        };
+        _grid.ColumnDisplayIndexChanged += (_, _) =>
+        {
+            if (_columnLayoutLoaded) _columnLayoutDirty = true;
         };
 
         _grid.Columns.Add(Column("Application", Localization.T("ColumnApplication"), 170));
@@ -179,14 +195,87 @@ internal sealed class MainForm : Form
         AutoSizeMode = DataGridViewAutoSizeColumnMode.None
     };
 
+    private async Task LoadColumnLayoutAsync()
+    {
+        var config = await _configService.LoadAsync();
+        var saved = config.Global.DashboardColumns ?? [];
+
+        _columnLayoutLoaded = false;
+        try
+        {
+            foreach (DataGridViewColumn column in _grid.Columns)
+            {
+                if (saved.TryGetValue(column.Name, out var layout) && layout.Width >= column.MinimumWidth)
+                {
+                    column.Width = Math.Clamp(layout.Width, column.MinimumWidth, 2400);
+                }
+            }
+
+            var ordered = _grid.Columns
+                .Cast<DataGridViewColumn>()
+                .OrderBy(column => saved.TryGetValue(column.Name, out var layout)
+                    ? layout.DisplayIndex
+                    : column.DisplayIndex)
+                .ThenBy(column => column.Index)
+                .ToList();
+
+            for (var i = 0; i < ordered.Count; i++)
+            {
+                ordered[i].DisplayIndex = i;
+            }
+        }
+        finally
+        {
+            _columnLayoutLoaded = true;
+            _columnLayoutDirty = false;
+        }
+    }
+
+    private void SaveColumnLayoutIfNeeded()
+    {
+        if (!_columnLayoutLoaded || !_columnLayoutDirty) return;
+
+        try
+        {
+            var config = _configService.LoadAsync().GetAwaiter().GetResult();
+            config.Global.DashboardColumns = _grid.Columns
+                .Cast<DataGridViewColumn>()
+                .ToDictionary(
+                    column => column.Name,
+                    column => new DashboardColumnLayout
+                    {
+                        Width = column.Width,
+                        DisplayIndex = column.DisplayIndex
+                    },
+                    StringComparer.Ordinal);
+
+            _configService.SaveAsync(config).GetAwaiter().GetResult();
+            _columnLayoutDirty = false;
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                AppPaths.EnsureDataDirectory();
+                File.AppendAllText(
+                    AppPaths.FallbackLog,
+                    $"{DateTimeOffset.UtcNow:O}`tWarning`tDashboardColumnLayoutSaveFailed`t{ex}{Environment.NewLine}");
+            }
+            catch
+            {
+                // UI shutdown must continue even if preferences cannot be saved.
+            }
+        }
+    }
+
     private Control BuildBottomPanel()
     {
         var panel = new FlowLayoutPanel
         {
             Dock = DockStyle.Bottom,
-            Height = 46,
+            Height = 52,
             FlowDirection = FlowDirection.LeftToRight,
-            Padding = new Padding(6),
+            Padding = new Padding(7),
             WrapContents = false
         };
 
@@ -198,7 +287,7 @@ internal sealed class MainForm : Form
         panel.Controls.Add(Button(Localization.T("ButtonStop"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.StopApplication)));
         panel.Controls.Add(Button(Localization.T("ButtonRestart"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.RestartApplication)));
 
-        var pauseButton = new Button { Text = Localization.T("ButtonPause"), AutoSize = true, Height = 28, MinimumSize = new Size(90, 28) };
+        var pauseButton = new Button { Text = Localization.T("ButtonPause"), AutoSize = true, Height = 32, MinimumSize = new Size(96, 32) };
         var pauseMenu = new ContextMenuStrip();
         pauseMenu.Items.Add(Localization.T("Duration15Minutes"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromMinutes(15)));
         pauseMenu.Items.Add(Localization.T("Duration1Hour"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(1)));
@@ -215,12 +304,97 @@ internal sealed class MainForm : Form
 
     private static Button Button(string text, EventHandler handler)
     {
-        var button = new Button { Text = text, AutoSize = true, Height = 28, MinimumSize = new Size(64, 28) };
+        var button = new Button { Text = text, AutoSize = true, Height = 32, MinimumSize = new Size(72, 32) };
         button.Click += handler;
         return button;
     }
 
-    private static Control Spacer() => new Panel { Width = 12, Height = 28 };
+    private static Control Spacer() => new Panel { Width = 12, Height = 32 };
+
+    private void ShowStartupTaskStatus()
+    {
+        var status = TaskSchedulerInstaller.GetStatus();
+        var expectedAgent = Path.Combine(AppContext.BaseDirectory, "AppWatcher.Agent.exe");
+        var expectedElevated = Path.Combine(AppContext.BaseDirectory, "AppWatcher.Elevated.exe");
+
+        var text = string.Join(
+            Environment.NewLine + Environment.NewLine,
+            FormatStartupTaskStatus(
+                Localization.T("StartupTaskAgentLabel"),
+                status.Agent,
+                expectedAgent),
+            FormatStartupTaskStatus(
+                Localization.T("StartupTaskElevatedLabel"),
+                status.Elevated,
+                expectedElevated));
+
+        MessageBox.Show(
+            this,
+            text,
+            Localization.T("StartupTaskStatusTitle"),
+            MessageBoxButtons.OK,
+            status.Agent.Installed && status.Agent.Enabled &&
+            status.Elevated.Installed && status.Elevated.Enabled
+                ? MessageBoxIcon.Information
+                : MessageBoxIcon.Warning);
+    }
+
+    private static string FormatStartupTaskStatus(
+        string label,
+        StartupTaskInfo info,
+        string expectedPath)
+    {
+        if (!info.Installed)
+        {
+            return string.IsNullOrWhiteSpace(info.Error)
+                ? Localization.F("StartupTaskNotInstalledFormat", label)
+                : Localization.F("StartupTaskErrorFormat", label, info.Error);
+        }
+
+        var enabled = info.Enabled
+            ? Localization.T("StartupTaskEnabled")
+            : Localization.T("StartupTaskDisabled");
+        var state = info.State switch
+        {
+            1 => Localization.T("StartupTaskStateDisabled"),
+            2 => Localization.T("StartupTaskStateQueued"),
+            3 => Localization.T("StartupTaskStateReady"),
+            4 => Localization.T("StartupTaskStateRunning"),
+            _ => Localization.T("StartupTaskStateUnknown")
+        };
+
+        var registeredPath = info.ExecutablePath ?? "-";
+        var pathMatches = PathsEqual(registeredPath, expectedPath)
+            ? Localization.T("StartupTaskPathMatches")
+            : Localization.T("StartupTaskPathMismatch");
+
+        return Localization.F(
+            "StartupTaskInstalledFormat",
+            label,
+            enabled,
+            state,
+            registeredPath,
+            pathMatches,
+            $"0x{info.LastTaskResult:X8}");
+    }
+
+    private static bool PathsEqual(string left, string right)
+    {
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(left.Trim().Trim('"')),
+                Path.GetFullPath(right.Trim().Trim('"')),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return string.Equals(
+                left.Trim().Trim('"'),
+                right.Trim().Trim('"'),
+                StringComparison.OrdinalIgnoreCase);
+        }
+    }
 
     private async Task EnsureNormalAgentStartedAsync()
     {
