@@ -419,6 +419,9 @@ internal sealed class MainForm : Form
         };
 
         panel.Controls.Add(Button(Localization.T("ButtonAdd"), async (_, _) => await AddAsync()));
+        panel.Controls.Add(Button(
+            Localization.T("ButtonAddRunning"),
+            async (_, _) => await AddRunningApplicationAsync()));
 
         ConfigureButton(_editButton, Localization.T("ButtonEdit"), async (_, _) => await EditSelectedAsync());
         ConfigureButton(_deleteButton, Localization.T("ButtonDelete"), async (_, _) => await DeleteSelectedAsync());
@@ -907,9 +910,110 @@ internal sealed class MainForm : Form
     private ApplicationSnapshot? SelectedSnapshot() =>
         _grid.SelectedRows.Count == 0 ? null : _grid.SelectedRows[0].Tag as ApplicationSnapshot;
 
-    private async Task AddAsync()
+    private Task AddAsync() =>
+        AddDefinitionAsync(new ApplicationDefinition());
+
+    private async Task AddRunningApplicationAsync()
     {
-        var definition = new ApplicationDefinition();
+        var response = await QueryRunningProcessesAsync();
+        if (response is null)
+        {
+            return;
+        }
+
+        var config = await _configService.LoadAsync();
+        using var picker = new RunningApplicationsForm(
+            response,
+            config.Applications.Select(application => application.ExecutablePath));
+
+        if (picker.ShowDialog(this) != DialogResult.OK ||
+            picker.SelectedProcess is null)
+        {
+            return;
+        }
+
+        var process = picker.SelectedProcess;
+        string workingDirectory;
+        try
+        {
+            workingDirectory = Path.GetDirectoryName(process.ExecutablePath) ?? string.Empty;
+        }
+        catch
+        {
+            workingDirectory = string.Empty;
+        }
+
+        var definition = new ApplicationDefinition
+        {
+            Name = process.Name,
+            ExecutablePath = process.ExecutablePath,
+            WorkingDirectory = workingDirectory,
+            Privilege = process.Privilege,
+            AttachExisting = true
+        };
+
+        await AddDefinitionAsync(definition);
+    }
+
+    private async Task<IReadOnlyList<RunningProcessInfo>?> QueryRunningProcessesAsync()
+    {
+        var response = await _adminClient.SendAsync(
+            new SupervisorRequest(SupervisorCommandType.GetRunningProcesses),
+            TimeSpan.FromSeconds(2));
+
+        if (!response.Success)
+        {
+            if (TaskSchedulerInstaller.TryStartRegisteredHost(PrivilegeLevel.Administrator) &&
+                await WaitForHostAsync(_adminClient, TimeSpan.FromSeconds(3)))
+            {
+                response = await _adminClient.SendAsync(
+                    new SupervisorRequest(SupervisorCommandType.GetRunningProcesses),
+                    TimeSpan.FromSeconds(3));
+            }
+        }
+
+        if (!response.Success)
+        {
+            var start = MessageBox.Show(
+                this,
+                Localization.T("RunningAppsElevatedPrompt"),
+                Localization.T("RunningAppsElevatedPromptTitle"),
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Information,
+                MessageBoxDefaultButton.Button1);
+
+            if (start != DialogResult.Yes)
+            {
+                return null;
+            }
+
+            if (StartHost("AppWatcher.Elevated.exe", elevated: true) &&
+                await WaitForHostAsync(_adminClient, TimeSpan.FromSeconds(5)))
+            {
+                response = await _adminClient.SendAsync(
+                    new SupervisorRequest(SupervisorCommandType.GetRunningProcesses),
+                    TimeSpan.FromSeconds(3));
+            }
+        }
+
+        if (!response.Success || response.RunningProcesses is null)
+        {
+            MessageBox.Show(
+                this,
+                Localization.F(
+                    "RunningAppsQueryFailed",
+                    response.Error ?? Localization.T("ElevatedOffline")),
+                Localization.T("RunningAppsTitle"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return null;
+        }
+
+        return response.RunningProcesses;
+    }
+
+    private async Task AddDefinitionAsync(ApplicationDefinition definition)
+    {
         using var editor = new AppEditForm(definition);
         if (editor.ShowDialog(this) != DialogResult.OK) return;
 

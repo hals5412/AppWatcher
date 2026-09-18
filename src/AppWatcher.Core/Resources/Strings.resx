@@ -827,4 +827,48 @@ Last task result: {5}</value>
   <data name="StartupTaskErrorFormat" xml:space="preserve">
     <value>{0}: Could not read task status
 {1}</value>
-  </data></root>
+  </data>  <data name="ButtonAddRunning" xml:space="preserve">
+    <value>Add running...</value>
+  </data>
+  <data name="RunningAppsTitle" xml:space="preserve">
+    <value>Running applications</value>
+  </data>
+  <data name="RunningAppsInfo" xml:space="preserve">
+    <value>Select a running application. AppWatcher detects its executable path and current privilege level automatically. Working directory is initialized from the executable location; command-line arguments are not imported, so set them in the next screen if required.</value>
+  </data>
+  <data name="RunningAppsFilterLabel" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="RunningAppsFilterPlaceholder" xml:space="preserve">
+    <value>Application name, window title, path, or privilege</value>
+  </data>
+  <data name="RunningAppsColumnInstances" xml:space="preserve">
+    <value>Instances</value>
+  </data>
+  <data name="RunningAppsColumnWindowTitle" xml:space="preserve">
+    <value>Window title</value>
+  </data>
+  <data name="RunningAppsColumnRegistration" xml:space="preserve">
+    <value>Registration</value>
+  </data>
+  <data name="RunningAppsAlreadyRegistered" xml:space="preserve">
+    <value>Already monitored</value>
+  </data>
+  <data name="RunningAppsAvailable" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="RunningAppsAddSelected" xml:space="preserve">
+    <value>Add selected...</value>
+  </data>
+  <data name="RunningAppsElevatedPromptTitle" xml:space="preserve">
+    <value>Administrator helper required</value>
+  </data>
+  <data name="RunningAppsElevatedPrompt" xml:space="preserve">
+    <value>AppWatcher uses the elevated helper to determine accurately whether each running application is running normally or with administrator privileges. Start the elevated helper now? Windows may show a UAC prompt if the startup task is not installed.</value>
+  </data>
+  <data name="RunningAppsQueryFailed" xml:space="preserve">
+    <value>Could not retrieve the running-application list.
+
+{0}</value>
+  </data>
+</root>

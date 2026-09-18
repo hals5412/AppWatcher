@@ -148,6 +148,14 @@ public sealed record ApplicationSnapshot(
     bool MonitoringEnabled,
     bool DetectHangs);
 
+public sealed record RunningProcessInfo(
+    int ProcessId,
+    string Name,
+    string ExecutablePath,
+    PrivilegeLevel Privilege,
+    string WindowTitle,
+    int InstanceCount);
+
 public sealed record HostSnapshot(
     PrivilegeLevel HostPrivilege,
     int HostProcessId,

@@ -127,6 +127,17 @@ public sealed class SupervisorEngine : IAsyncDisposable
             version);
     }
 
+    public IReadOnlyList<RunningProcessInfo> GetRunningProcesses()
+    {
+        if (_hostPrivilege != PrivilegeLevel.Administrator)
+        {
+            throw new InvalidOperationException(
+                "Running-process privilege inspection requires the elevated helper.");
+        }
+
+        return RunningProcessDiscovery.EnumerateCurrentSession();
+    }
+
     public async Task StartApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var supervisor = GetSupervisor(id);

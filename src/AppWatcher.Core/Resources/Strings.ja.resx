@@ -827,4 +827,48 @@ AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監�
   <data name="StartupTaskErrorFormat" xml:space="preserve">
     <value>{0}: タスク状態を取得できません
 {1}</value>
-  </data></root>
+  </data>  <data name="ButtonAddRunning" xml:space="preserve">
+    <value>実行中から追加...</value>
+  </data>
+  <data name="RunningAppsTitle" xml:space="preserve">
+    <value>実行中のアプリ</value>
+  </data>
+  <data name="RunningAppsInfo" xml:space="preserve">
+    <value>実行中のアプリを選択してください。実行ファイルのパスと現在の権限（通常／管理者）を自動判定します。作業フォルダーは実行ファイルの場所を初期値にします。起動引数は取得しないため、必要な場合は次の画面で設定してください。</value>
+  </data>
+  <data name="RunningAppsFilterLabel" xml:space="preserve">
+    <value>絞り込み</value>
+  </data>
+  <data name="RunningAppsFilterPlaceholder" xml:space="preserve">
+    <value>アプリ名、ウィンドウ名、パス、権限で検索</value>
+  </data>
+  <data name="RunningAppsColumnInstances" xml:space="preserve">
+    <value>起動数</value>
+  </data>
+  <data name="RunningAppsColumnWindowTitle" xml:space="preserve">
+    <value>ウィンドウ名</value>
+  </data>
+  <data name="RunningAppsColumnRegistration" xml:space="preserve">
+    <value>登録状態</value>
+  </data>
+  <data name="RunningAppsAlreadyRegistered" xml:space="preserve">
+    <value>登録済み</value>
+  </data>
+  <data name="RunningAppsAvailable" xml:space="preserve">
+    <value>追加可能</value>
+  </data>
+  <data name="RunningAppsAddSelected" xml:space="preserve">
+    <value>選択したアプリを追加...</value>
+  </data>
+  <data name="RunningAppsElevatedPromptTitle" xml:space="preserve">
+    <value>管理者Helperが必要です</value>
+  </data>
+  <data name="RunningAppsElevatedPrompt" xml:space="preserve">
+    <value>実行中の各アプリが通常権限か管理者権限かを正確に判定するため、管理者Helperを使用します。管理者Helperを起動しますか？ 自動起動タスクが未登録の場合はWindowsのUAC確認が表示されることがあります。</value>
+  </data>
+  <data name="RunningAppsQueryFailed" xml:space="preserve">
+    <value>実行中のアプリ一覧を取得できませんでした。
+
+{0}</value>
+  </data>
+</root>

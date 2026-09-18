@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.13
+
+- Added a running-application picker to the dashboard.
+- The elevated helper enumerates executable paths in the current interactive session and detects whether each process is running normally or elevated.
+- Running processes are grouped by executable path and privilege, with PID, instance count, window title and registration status shown in the picker.
+- Selecting a running application pre-fills the normal application editor with executable path, working directory, privilege and attach-existing settings.
+- Existing monitored executable paths are marked as already registered and cannot be selected again.
 ## 0.1.0-alpha.12
 
 - Made dashboard and row-context commands state-aware.

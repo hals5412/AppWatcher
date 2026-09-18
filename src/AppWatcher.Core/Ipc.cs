@@ -11,6 +11,7 @@ public enum SupervisorCommandType
 {
     Ping,
     GetSnapshot,
+    GetRunningProcesses,
     ReloadConfiguration,
     StartApplication,
     StopApplication,
@@ -30,7 +31,8 @@ public sealed record SupervisorRequest(
 public sealed record SupervisorResponse(
     bool Success,
     string? Error = null,
-    HostSnapshot? Snapshot = null);
+    HostSnapshot? Snapshot = null,
+    IReadOnlyList<RunningProcessInfo>? RunningProcesses = null);
 
 public static class PipeNames
 {
@@ -191,6 +193,10 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
                     return new SupervisorResponse(true);
                 case SupervisorCommandType.GetSnapshot:
                     return new SupervisorResponse(true, Snapshot: _engine.Snapshot());
+                case SupervisorCommandType.GetRunningProcesses:
+                    return new SupervisorResponse(
+                        true,
+                        RunningProcesses: _engine.GetRunningProcesses());
                 case SupervisorCommandType.ReloadConfiguration:
                     await _engine.ReloadAsync(cancellationToken).ConfigureAwait(false);
                     return new SupervisorResponse(true, Snapshot: _engine.Snapshot());
