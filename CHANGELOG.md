@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0-alpha.11
+
+- Removed the manual Refresh command from the dashboard and row context menu.
+- The dashboard continues to refresh automatically every two seconds while it is open.
 ## 0.1.0-alpha.10
 
 - Added a right-click context menu to monitored-application rows.

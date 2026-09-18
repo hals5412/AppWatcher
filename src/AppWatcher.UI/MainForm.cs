@@ -335,10 +335,6 @@ internal sealed class MainForm : Form
             Localization.T("ButtonLogs"),
             null,
             (_, _) => new EventLogForm().Show(this));
-        _rowContextMenu.Items.Add(
-            Localization.T("ButtonRefresh"),
-            null,
-            async (_, _) => await RefreshDashboardAsync());
     }
 
     private void GridOnCellMouseDown(object? sender, DataGridViewCellMouseEventArgs e)
@@ -404,7 +400,6 @@ internal sealed class MainForm : Form
         panel.Controls.Add(Button(Localization.T("ButtonResume"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.ResumeApplication)));
         panel.Controls.Add(Spacer());
         panel.Controls.Add(Button(Localization.T("ButtonLogs"), (_, _) => new EventLogForm().Show(this)));
-        panel.Controls.Add(Button(Localization.T("ButtonRefresh"), async (_, _) => await RefreshDashboardAsync()));
         return panel;
     }
 
