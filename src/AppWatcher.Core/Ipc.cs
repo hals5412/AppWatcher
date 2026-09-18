@@ -75,22 +75,43 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            var server = CreateServerStream();
+            NamedPipeServerStream? server = null;
 
             try
             {
+                server = CreateServerStream();
                 await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+                // HandleClientAsync owns and disposes the connected stream.
                 _ = HandleClientAsync(server, cancellationToken);
+                server = null;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                await server.DisposeAsync().ConfigureAwait(false);
+                if (server is not null)
+                {
+                    await server.DisposeAsync().ConfigureAwait(false);
+                }
                 break;
             }
-            catch
+            catch (Exception ex)
             {
-                await server.DisposeAsync().ConfigureAwait(false);
-                // A malformed/disconnected client must not terminate the host.
+                if (server is not null)
+                {
+                    await server.DisposeAsync().ConfigureAwait(false);
+                }
+
+                TryWritePipeFailure(ex);
+
+                // Avoid a tight failure loop if Windows rejects pipe creation.
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
             }
         }
     }
@@ -104,8 +125,14 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
                   ?? throw new InvalidOperationException("The current Windows user SID is unavailable.");
 
         var security = new PipeSecurity();
+
+        // Use an explicit DACL for the signed-in user, but do not add a mandatory
+        // integrity SACL. Windows treats an unlabeled securable object as medium
+        // integrity, which allows the medium-integrity dashboard to use the pipe.
+        // Adding the SACL here can require privileges unavailable to the normal Agent
+        // and can make both IPC servers fail before accepting a connection.
         security.SetSecurityDescriptorSddlForm(
-            $"D:P(A;;GA;;;{sid.Value})S:(ML;;NW;;;ME)");
+            $"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;{sid.Value})");
 
         return NamedPipeServerStreamAcl.Create(
             _pipeName,
@@ -116,6 +143,21 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
             inBufferSize: 0,
             outBufferSize: 0,
             pipeSecurity: security);
+    }
+
+    private void TryWritePipeFailure(Exception ex)
+    {
+        try
+        {
+            AppPaths.EnsureDataDirectory();
+            File.AppendAllText(
+                AppPaths.FallbackLog,
+                $"{DateTimeOffset.UtcNow:O}`tError`tPipeServerFailure`tPipe={_pipeName}`t{ex}{Environment.NewLine}");
+        }
+        catch
+        {
+            // IPC diagnostics must never terminate supervision.
+        }
     }
 
     private async Task HandleClientAsync(NamedPipeServerStream server, CancellationToken cancellationToken)

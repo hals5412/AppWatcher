@@ -1,11 +1,16 @@
 # Changelog
 
-## 0.1.0-alpha.5
-
-- Prevented duplicate application registrations by normalized executable path.
-- Fixed cross-UAC IPC so the medium-integrity dashboard can communicate with the elevated helper securely.
-- Added detailed Elevated Helper startup diagnostics.
-- Localized offline/pending dashboard event and reason codes.
+## 0.1.0-alpha.6
+
+- Fixed IPC startup regression that could leave both Agent and Elevated Helper shown as offline while their processes were running.
+- Removed the mandatory-integrity SACL from the named pipe and retained a current-user DACL for cross-UAC communication.
+- Added fallback logging for named-pipe server creation failures so IPC faults are diagnosable without stopping supervision.
+## 0.1.0-alpha.5
+
+- Prevented duplicate application registrations by normalized executable path.
+- Fixed cross-UAC IPC so the medium-integrity dashboard can communicate with the elevated helper securely.
+- Added detailed Elevated Helper startup diagnostics.
+- Localized offline/pending dashboard event and reason codes.
 ## 0.1.0-alpha.4
 
 - Fixed the dashboard layout so column headers are always visible.
