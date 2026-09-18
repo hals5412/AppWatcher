@@ -1,8 +1,10 @@
 # AppWatcher
 
+[日本語 README](README.ja.md) | English
+
 AppWatcher is a lightweight Windows supervisor for long-running desktop applications. It is designed for applications such as **TVRock**, **TVTest**, Libre Hardware Monitor, recording utilities, and other software that should normally stay running.
 
-> Status: **v0.1.0-alpha.2 / localization build**. The core architecture is in place, but this version still needs Windows build/runtime testing before it should replace an existing watchdog in production.
+> Status: **v0.1.0-alpha.6 / development build**. Core monitoring, Japanese/English UI, coordinated shutdown/restart, duplicate-registration prevention, and normal/elevated host IPC are implemented. Continue runtime testing before replacing an existing watchdog in production.
 
 ## Design goals
 

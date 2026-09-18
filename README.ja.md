@@ -1,0 +1,162 @@
+# AppWatcher
+
+日本語 | [English README](README.md)
+
+AppWatcher は、Windows 上で常時稼働させたいデスクトップアプリを監視し、異常終了や応答停止時に自動復旧するための軽量な監視ツールです。TVRock / TVTest、Libre Hardware Monitor、録画関連ソフトなどを主な対象として想定しています。
+
+> 現在の状態: **v0.1.0-alpha.6 / 開発版**。通常権限・管理者権限アプリの監視、日本語/英語UI、完全終了/再起動、重複登録防止、通常UIと管理者Helper間のIPCなどを実装済みです。既存のウォッチドッグを本番置換する前に、引き続き実環境での検証が必要です。
+
+## 設計方針
+
+- プロセス終了を検知して自動再起動する。
+- 必要に応じてGUIの応答なしを検知して復旧する。
+- 通常権限アプリと管理者権限アプリを1つのダッシュボードで管理する。
+- メンテナンス時に監視を簡単に一時停止できる。
+- 「何が起きたか」「AppWatcherが何を判断したか」「なぜそう判断したか」をログに残す。
+- 常駐部分はイベント駆動を基本とし、CPU負荷をできるだけ小さくする。
+- 監視のためだけに対象アプリの実行環境を変えない。
+- 対象GUIアプリをSession 0へ移動しない。
+- 対象アプリをWindows Job Objectへ強制的に入れない。
+- 子プロセスをデフォルトでは管理・終了しない。
+
+TVRockからTVTestを起動するような既存Windowsアプリとの互換性を重視しています。AppWatcher経由で起動しても、エクスプローラーから普通に起動した場合に近い挙動になることを目標にしています。
+
+## コンポーネント
+
+| コンポーネント | 役割 |
+| --- | --- |
+| `AppWatcher.Agent.exe` | 通常権限アプリを監視する常駐ホスト。トレイアイコンも担当します。 |
+| `AppWatcher.Elevated.exe` | 管理者権限アプリを監視する常駐Helper。画面は表示しません。 |
+| `AppWatcher.UI.exe` | ダッシュボード、設定編集、イベントログ、診断機能。必要なときだけ開きます。 |
+| `AppWatcher.Core.dll` | 監視、設定、ログ、IPCなどの共通ロジック。 |
+
+Agent と Elevated Helper は、どちらも**ログオン中ユーザーの対話型デスクトップセッション**で動作します。Windowsサービスではありません。
+
+## 主な機能
+
+- 実行ファイルのフルパスを使ったプロセス識別。
+- 既に起動しているプロセスへのAttach。
+- `Process.Exited` を使ったイベント駆動の終了検知。
+- 予期しない終了からの自動再起動。
+- GUI応答なし検知。
+- 再起動ループ防止とBackoff。
+- アプリ単位の監視一時停止。
+- 全体メンテナンスモード。
+- 通常権限 / 管理者権限の統合ダッシュボード。
+- JSON設定ファイルと3世代バックアップ。
+- SQLiteイベント履歴。
+- Reason Code付きの詳細ログ。
+- 診断ZIP作成。
+- 日本語 / English UI。
+- 同じ実行ファイルパスの重複登録防止。
+- AppWatcher自身の完全終了 / 再起動。
+
+## 初回起動
+
+ユーザーが起動する入口は **`AppWatcher.UI.exe`** です。UIは通常権限で起動してください。
+
+通常は `AppWatcher.Agent.exe` や `AppWatcher.Elevated.exe` を直接起動する必要はありません。
+
+管理者権限アプリも監視する場合は、初回に一度だけ **ツール → 自動起動タスクをインストール／修復...** を実行し、UACを承認します。
+
+## 「自動起動タスクをインストール／修復...」が行うこと
+
+Windowsタスクスケジューラの `\AppWatcher` フォルダに、現在のWindowsユーザー向けの2つのタスクを作成または更新します。
+
+| タスク | 実行権限 | 用途 |
+| --- | --- | --- |
+| `Agent` | 通常権限 | 通常アプリの監視 |
+| `Elevated` | 最上位権限 | 管理者権限アプリの監視 |
+
+両方とも**現在のWindowsユーザーのログオン時**に起動し、ログオン中の対話型デスクトップセッションでのみ動作します。
+
+これにより、
+
+- Windowsログオン後に監視を自動開始できる。
+- 管理者権限Helperを毎回UAC確認なしで起動できる。
+- 管理者権限アプリをAppWatcherから自動再起動できる。
+- Windowsサービス化によるSession 0問題を避けられる。
+
+という構成になります。
+
+インストール処理ではAppWatcherのファイルを別の場所へコピーしません。タスクの実行先として**現在のAppWatcherフォルダ内のexeパス**を登録します。そのため、AppWatcherフォルダを移動した場合や別フォルダの新ビルドへ入れ替えた場合は、もう一度「自動起動タスクをインストール／修復...」を実行してください。
+
+登録後は `Agent` と `Elevated` のタスクをその場で起動します。
+
+現在の実装では、タスクに以下も設定しています。
+
+- `Agent`: InteractiveToken / 通常権限
+- `Elevated`: InteractiveToken / Highest
+- ログオン時トリガー
+- バッテリー駆動でも停止しない
+- 実行時間制限なし
+- 多重起動時は新しいインスタンスを作らない
+
+## 管理者権限アプリの監視
+
+たとえばLibre Hardware Monitorを管理者権限で監視する場合は、アプリ設定で以下を指定します。
+
+- 実行権限: 管理者
+- 監視を有効にする: ON
+- AppWatcher起動時に自動起動する: ON
+- 既に起動しているプロセスに接続: ON
+
+正常時はダッシュボード上部にAgentと管理者HelperのPID・稼働時間が表示され、対象アプリは「正常 / 管理者」と表示されます。
+
+## TVRock / TVTest互換性
+
+AppWatcherは対象アプリ起動時に `CREATE_NO_WINDOW`、`DETACHED_PROCESS`、非表示デスクトップ、Windowsサービス、Job Objectへの強制所属をデフォルトでは使用しません。
+
+子プロセスの既定ポリシーも `Unmanaged` です。TVRockを監視していても、TVRockから起動されたTVTestはAppWatcherが勝手に所有・終了しません。
+
+## データ保存場所
+
+データは次のフォルダへ保存します。
+
+    %LOCALAPPDATA%\AppWatcher\
+
+主なファイル:
+
+    config.json
+    config.backup-1.json
+    config.backup-2.json
+    config.backup-3.json
+    events.db
+    events.db-wal
+    events.db-shm
+    appwatcher-fallback.log
+
+## AppWatcherの終了と再起動
+
+ダッシュボードを閉じるだけでは監視は終了しません。AppWatcher全体を停止する場合はトレイまたはダッシュボードから **AppWatcherを完全終了** を使用します。
+
+この操作では監視対象アプリ自体は終了しません。
+
+コマンドラインからも利用できます。
+
+    AppWatcher.UI.exe --shutdown
+    AppWatcher.UI.exe --restart
+
+## ビルド
+
+    dotnet restore .\AppWatcher.sln
+    dotnet build .\AppWatcher.sln -c Release
+
+実行ファイル一式をまとめる場合:
+
+    .\scripts\publish.ps1
+
+self-containedのwin-x64版:
+
+    .\scripts\publish.ps1 -SelfContained
+
+## 現在のalpha版の制限
+
+- 時間指定Pause / Maintenanceの状態は現在ホストメモリ上にあり、異常終了後の永続化は未実装です。
+- `ChildProcessPolicy.TrackOnly` / `StopWithParent` は将来用です。
+- TCP / HTTPヘルスチェックは未実装です。
+- 対象アプリごとのCPU/RAM履歴収集はまだ行いません。
+- 自動アップデート機能は未実装です。
+- 言語変更後はAgent / UIの再起動が必要です。
+
+詳細設計は [specification](docs/specification.md)、[architecture](docs/architecture.md)、[manual test plan](docs/manual-test-plan.md) を参照してください。
