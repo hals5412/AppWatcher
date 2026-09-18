@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.12
+
+- Made dashboard and row-context commands state-aware.
+- Disabled Start for already-running, paused, transitioning or unavailable applications.
+- Disabled Stop when no process is running and disabled Restart unless a process is currently running.
+- Disabled per-application Resume when the application is not paused, monitoring is disabled, or global maintenance is active.
+- Command availability now updates immediately on selection changes, right-click selection and the two-second dashboard refresh.
 ## 0.1.0-alpha.11
 
 - Removed the manual Refresh command from the dashboard and row context menu.

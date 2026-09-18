@@ -11,6 +11,23 @@ internal sealed class MainForm : Form
     private readonly SupervisorClient _adminClient = new(PrivilegeLevel.Administrator);
     private readonly DataGridView _grid = new();
     private readonly ContextMenuStrip _rowContextMenu = new();
+
+    private readonly Button _editButton = new();
+    private readonly Button _deleteButton = new();
+    private readonly Button _startButton = new();
+    private readonly Button _stopButton = new();
+    private readonly Button _restartButton = new();
+    private readonly Button _pauseButton = new();
+    private readonly Button _resumeButton = new();
+
+    private readonly ToolStripMenuItem _contextEditItem = new();
+    private readonly ToolStripMenuItem _contextDeleteItem = new();
+    private readonly ToolStripMenuItem _contextStartItem = new();
+    private readonly ToolStripMenuItem _contextStopItem = new();
+    private readonly ToolStripMenuItem _contextRestartItem = new();
+    private readonly ToolStripMenuItem _contextPauseItem = new();
+    private readonly ToolStripMenuItem _contextResumeItem = new();
+
     private readonly Label _summary = new();
     private readonly Label _hostStatus = new();
     private readonly System.Windows.Forms.Timer _refreshTimer = new();
@@ -169,6 +186,7 @@ internal sealed class MainForm : Form
             if (e.RowIndex >= 0) await EditSelectedAsync();
         };
         _grid.CellMouseDown += GridOnCellMouseDown;
+        _grid.SelectionChanged += (_, _) => UpdateCommandAvailability();
         _grid.ColumnWidthChanged += (_, _) =>
         {
             if (_columnLayoutLoaded) _columnLayoutDirty = true;
@@ -280,61 +298,79 @@ internal sealed class MainForm : Form
             Localization.T("ButtonAdd"),
             null,
             async (_, _) => await AddAsync());
-        _rowContextMenu.Items.Add(
+
+        ConfigureContextItem(
+            _contextEditItem,
             Localization.T("ButtonEdit"),
-            null,
             async (_, _) => await EditSelectedAsync());
-        _rowContextMenu.Items.Add(
+        ConfigureContextItem(
+            _contextDeleteItem,
             Localization.T("ButtonDelete"),
-            null,
             async (_, _) => await DeleteSelectedAsync());
 
+        _rowContextMenu.Items.Add(_contextEditItem);
+        _rowContextMenu.Items.Add(_contextDeleteItem);
         _rowContextMenu.Items.Add(new ToolStripSeparator());
 
-        _rowContextMenu.Items.Add(
+        ConfigureContextItem(
+            _contextStartItem,
             Localization.T("ButtonStart"),
-            null,
             async (_, _) => await SendSelectedAsync(SupervisorCommandType.StartApplication));
-        _rowContextMenu.Items.Add(
+        ConfigureContextItem(
+            _contextStopItem,
             Localization.T("ButtonStop"),
-            null,
             async (_, _) => await SendSelectedAsync(SupervisorCommandType.StopApplication));
-        _rowContextMenu.Items.Add(
+        ConfigureContextItem(
+            _contextRestartItem,
             Localization.T("ButtonRestart"),
-            null,
             async (_, _) => await SendSelectedAsync(SupervisorCommandType.RestartApplication));
 
-        var pauseText = Localization.T("ButtonPause").Trim().TrimEnd('▼').TrimEnd();
-        var pause = new ToolStripMenuItem(pauseText);
-        pause.DropDownItems.Add(
+        _rowContextMenu.Items.Add(_contextStartItem);
+        _rowContextMenu.Items.Add(_contextStopItem);
+        _rowContextMenu.Items.Add(_contextRestartItem);
+
+        _contextPauseItem.Text = Localization.T("ButtonPause").Trim().TrimEnd('▼').TrimEnd();
+        _contextPauseItem.DropDownItems.Clear();
+        _contextPauseItem.DropDownItems.Add(
             Localization.T("Duration15Minutes"),
             null,
             async (_, _) => await PauseSelectedAsync(TimeSpan.FromMinutes(15)));
-        pause.DropDownItems.Add(
+        _contextPauseItem.DropDownItems.Add(
             Localization.T("Duration1Hour"),
             null,
             async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(1)));
-        pause.DropDownItems.Add(
+        _contextPauseItem.DropDownItems.Add(
             Localization.T("Duration4Hours"),
             null,
             async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(4)));
-        pause.DropDownItems.Add(
+        _contextPauseItem.DropDownItems.Add(
             Localization.T("DurationIndefinitely"),
             null,
             async (_, _) => await PauseSelectedAsync(null));
-        _rowContextMenu.Items.Add(pause);
+        _rowContextMenu.Items.Add(_contextPauseItem);
 
-        _rowContextMenu.Items.Add(
+        ConfigureContextItem(
+            _contextResumeItem,
             Localization.T("ButtonResume"),
-            null,
             async (_, _) => await SendSelectedAsync(SupervisorCommandType.ResumeApplication));
+        _rowContextMenu.Items.Add(_contextResumeItem);
 
         _rowContextMenu.Items.Add(new ToolStripSeparator());
-
         _rowContextMenu.Items.Add(
             Localization.T("ButtonLogs"),
             null,
             (_, _) => new EventLogForm().Show(this));
+
+        UpdateCommandAvailability();
+    }
+
+    private static void ConfigureContextItem(
+        ToolStripMenuItem item,
+        string text,
+        EventHandler handler)
+    {
+        item.Text = text;
+        item.Click += handler;
     }
 
     private void GridOnCellMouseDown(object? sender, DataGridViewCellMouseEventArgs e)
@@ -367,6 +403,7 @@ internal sealed class MainForm : Form
             }
         }
 
+        UpdateCommandAvailability();
         _rowContextMenu.Show(_grid, e.Location);
     }
 
@@ -382,32 +419,140 @@ internal sealed class MainForm : Form
         };
 
         panel.Controls.Add(Button(Localization.T("ButtonAdd"), async (_, _) => await AddAsync()));
-        panel.Controls.Add(Button(Localization.T("ButtonEdit"), async (_, _) => await EditSelectedAsync()));
-        panel.Controls.Add(Button(Localization.T("ButtonDelete"), async (_, _) => await DeleteSelectedAsync()));
-        panel.Controls.Add(Spacer());
-        panel.Controls.Add(Button(Localization.T("ButtonStart"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.StartApplication)));
-        panel.Controls.Add(Button(Localization.T("ButtonStop"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.StopApplication)));
-        panel.Controls.Add(Button(Localization.T("ButtonRestart"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.RestartApplication)));
 
-        var pauseButton = new Button { Text = Localization.T("ButtonPause"), AutoSize = true, Height = 32, MinimumSize = new Size(96, 32) };
+        ConfigureButton(_editButton, Localization.T("ButtonEdit"), async (_, _) => await EditSelectedAsync());
+        ConfigureButton(_deleteButton, Localization.T("ButtonDelete"), async (_, _) => await DeleteSelectedAsync());
+        panel.Controls.Add(_editButton);
+        panel.Controls.Add(_deleteButton);
+
+        panel.Controls.Add(Spacer());
+
+        ConfigureButton(
+            _startButton,
+            Localization.T("ButtonStart"),
+            async (_, _) => await SendSelectedAsync(SupervisorCommandType.StartApplication));
+        ConfigureButton(
+            _stopButton,
+            Localization.T("ButtonStop"),
+            async (_, _) => await SendSelectedAsync(SupervisorCommandType.StopApplication));
+        ConfigureButton(
+            _restartButton,
+            Localization.T("ButtonRestart"),
+            async (_, _) => await SendSelectedAsync(SupervisorCommandType.RestartApplication));
+
+        panel.Controls.Add(_startButton);
+        panel.Controls.Add(_stopButton);
+        panel.Controls.Add(_restartButton);
+
+        ConfigureButton(_pauseButton, Localization.T("ButtonPause"), (_, _) => { }, minimumWidth: 96);
         var pauseMenu = new ContextMenuStrip();
         pauseMenu.Items.Add(Localization.T("Duration15Minutes"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromMinutes(15)));
         pauseMenu.Items.Add(Localization.T("Duration1Hour"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(1)));
         pauseMenu.Items.Add(Localization.T("Duration4Hours"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(4)));
         pauseMenu.Items.Add(Localization.T("DurationIndefinitely"), null, async (_, _) => await PauseSelectedAsync(null));
-        pauseButton.Click += (_, _) => pauseMenu.Show(pauseButton, new Point(0, pauseButton.Height));
-        panel.Controls.Add(pauseButton);
-        panel.Controls.Add(Button(Localization.T("ButtonResume"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.ResumeApplication)));
+        _pauseButton.Click += (_, _) => pauseMenu.Show(_pauseButton, new Point(0, _pauseButton.Height));
+        panel.Controls.Add(_pauseButton);
+
+        ConfigureButton(
+            _resumeButton,
+            Localization.T("ButtonResume"),
+            async (_, _) => await SendSelectedAsync(SupervisorCommandType.ResumeApplication));
+        panel.Controls.Add(_resumeButton);
+
         panel.Controls.Add(Spacer());
         panel.Controls.Add(Button(Localization.T("ButtonLogs"), (_, _) => new EventLogForm().Show(this)));
+
+        UpdateCommandAvailability();
         return panel;
     }
 
     private static Button Button(string text, EventHandler handler)
     {
-        var button = new Button { Text = text, AutoSize = true, Height = 32, MinimumSize = new Size(72, 32) };
-        button.Click += handler;
+        var button = new Button();
+        ConfigureButton(button, text, handler);
         return button;
+    }
+
+    private static void ConfigureButton(
+        Button button,
+        string text,
+        EventHandler handler,
+        int minimumWidth = 72)
+    {
+        button.Text = text;
+        button.AutoSize = true;
+        button.Height = 32;
+        button.MinimumSize = new Size(minimumWidth, 32);
+        button.Click += handler;
+    }
+
+    private void UpdateCommandAvailability()
+    {
+        var selected = SelectedSnapshot();
+        var hasSelection = selected is not null;
+
+        var state = selected?.State ?? AppRuntimeState.Unknown;
+        var running = selected?.ProcessId is not null;
+        var unavailable = !hasSelection || state == AppRuntimeState.Unknown;
+        var transitional = state is AppRuntimeState.Starting or AppRuntimeState.Restarting;
+        var paused = state == AppRuntimeState.Paused;
+        var globalMaintenance = selected is not null &&
+            (selected.Privilege == PrivilegeLevel.Administrator
+                ? _adminHost?.MaintenanceActive == true
+                : _normalHost?.MaintenanceActive == true);
+
+        var canEdit = hasSelection;
+        var canDelete = hasSelection;
+
+        // Start is useful for a genuinely stopped/failed/backoff application,
+        // but not while it is already running, paused, transitioning, or offline.
+        var canStart = !unavailable &&
+                       !transitional &&
+                       !paused &&
+                       !running;
+
+        // Stop remains useful while monitoring is paused if the process itself
+        // is still running.
+        var canStop = !unavailable &&
+                      !transitional &&
+                      running;
+
+        // Restart only makes semantic sense for a currently running application.
+        // While paused, restarting would stop it and then be suppressed by pause.
+        var canRestart = !unavailable &&
+                         !transitional &&
+                         !paused &&
+                         running;
+
+        // Pause can also be useful in Stopped/Failed/Backoff states because it
+        // prevents later automatic recovery. Resume is only meaningful for an
+        // application-level pause while monitoring is enabled and global
+        // maintenance is not active.
+        var canPause = !unavailable &&
+                       !transitional &&
+                       !paused &&
+                       selected!.MonitoringEnabled;
+
+        var canResume = !unavailable &&
+                        paused &&
+                        selected!.MonitoringEnabled &&
+                        !globalMaintenance;
+
+        _editButton.Enabled = canEdit;
+        _deleteButton.Enabled = canDelete;
+        _startButton.Enabled = canStart;
+        _stopButton.Enabled = canStop;
+        _restartButton.Enabled = canRestart;
+        _pauseButton.Enabled = canPause;
+        _resumeButton.Enabled = canResume;
+
+        _contextEditItem.Enabled = canEdit;
+        _contextDeleteItem.Enabled = canDelete;
+        _contextStartItem.Enabled = canStart;
+        _contextStopItem.Enabled = canStop;
+        _contextRestartItem.Enabled = canRestart;
+        _contextPauseItem.Enabled = canPause;
+        _contextResumeItem.Enabled = canResume;
     }
 
     private static Control Spacer() => new Panel { Width = 12, Height = 32 };
@@ -684,6 +829,7 @@ internal sealed class MainForm : Form
             var problems = apps.Count(a => a.State is AppRuntimeState.Failed or AppRuntimeState.Backoff or AppRuntimeState.Unresponsive or AppRuntimeState.Unknown);
             _summary.Text = Localization.F("SummaryFormat", healthy, paused, problems, apps.Count);
             UpdateHostStatus(normal.Error, admin.Error);
+            UpdateCommandAvailability();
         }
         finally
         {
