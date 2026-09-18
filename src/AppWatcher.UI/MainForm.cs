@@ -10,6 +10,7 @@ internal sealed class MainForm : Form
     private readonly SupervisorClient _normalClient = new(PrivilegeLevel.Normal);
     private readonly SupervisorClient _adminClient = new(PrivilegeLevel.Administrator);
     private readonly DataGridView _grid = new();
+    private readonly ContextMenuStrip _rowContextMenu = new();
     private readonly Label _summary = new();
     private readonly Label _hostStatus = new();
     private readonly System.Windows.Forms.Timer _refreshTimer = new();
@@ -38,6 +39,7 @@ internal sealed class MainForm : Form
         _hostStatus.Padding = new Padding(8, 8, 8, 0);
 
         ConfigureGrid();
+        ConfigureRowContextMenu();
 
         var bottom = BuildBottomPanel();
 
@@ -91,6 +93,7 @@ internal sealed class MainForm : Form
             _refreshTimer.Dispose();
             _lifecycleTimer.Stop();
             _lifecycleTimer.Dispose();
+            _rowContextMenu.Dispose();
             _uiExitEvent.Dispose();
             _refreshGate.Dispose();
         };
@@ -165,6 +168,7 @@ internal sealed class MainForm : Form
         {
             if (e.RowIndex >= 0) await EditSelectedAsync();
         };
+        _grid.CellMouseDown += GridOnCellMouseDown;
         _grid.ColumnWidthChanged += (_, _) =>
         {
             if (_columnLayoutLoaded) _columnLayoutDirty = true;
@@ -266,6 +270,108 @@ internal sealed class MainForm : Form
                 // UI shutdown must continue even if preferences cannot be saved.
             }
         }
+    }
+
+    private void ConfigureRowContextMenu()
+    {
+        _rowContextMenu.Items.Clear();
+
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonAdd"),
+            null,
+            async (_, _) => await AddAsync());
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonEdit"),
+            null,
+            async (_, _) => await EditSelectedAsync());
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonDelete"),
+            null,
+            async (_, _) => await DeleteSelectedAsync());
+
+        _rowContextMenu.Items.Add(new ToolStripSeparator());
+
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonStart"),
+            null,
+            async (_, _) => await SendSelectedAsync(SupervisorCommandType.StartApplication));
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonStop"),
+            null,
+            async (_, _) => await SendSelectedAsync(SupervisorCommandType.StopApplication));
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonRestart"),
+            null,
+            async (_, _) => await SendSelectedAsync(SupervisorCommandType.RestartApplication));
+
+        var pauseText = Localization.T("ButtonPause").Trim().TrimEnd('▼').TrimEnd();
+        var pause = new ToolStripMenuItem(pauseText);
+        pause.DropDownItems.Add(
+            Localization.T("Duration15Minutes"),
+            null,
+            async (_, _) => await PauseSelectedAsync(TimeSpan.FromMinutes(15)));
+        pause.DropDownItems.Add(
+            Localization.T("Duration1Hour"),
+            null,
+            async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(1)));
+        pause.DropDownItems.Add(
+            Localization.T("Duration4Hours"),
+            null,
+            async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(4)));
+        pause.DropDownItems.Add(
+            Localization.T("DurationIndefinitely"),
+            null,
+            async (_, _) => await PauseSelectedAsync(null));
+        _rowContextMenu.Items.Add(pause);
+
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonResume"),
+            null,
+            async (_, _) => await SendSelectedAsync(SupervisorCommandType.ResumeApplication));
+
+        _rowContextMenu.Items.Add(new ToolStripSeparator());
+
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonLogs"),
+            null,
+            (_, _) => new EventLogForm().Show(this));
+        _rowContextMenu.Items.Add(
+            Localization.T("ButtonRefresh"),
+            null,
+            async (_, _) => await RefreshDashboardAsync());
+    }
+
+    private void GridOnCellMouseDown(object? sender, DataGridViewCellMouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Right || e.RowIndex < 0)
+        {
+            return;
+        }
+
+        _grid.ClearSelection();
+
+        var row = _grid.Rows[e.RowIndex];
+        row.Selected = true;
+
+        if (e.ColumnIndex >= 0)
+        {
+            _grid.CurrentCell = row.Cells[e.ColumnIndex];
+        }
+        else
+        {
+            var firstVisibleColumn = _grid.Columns
+                .Cast<DataGridViewColumn>()
+                .Where(column => column.Visible)
+                .OrderBy(column => column.DisplayIndex)
+                .FirstOrDefault();
+
+            if (firstVisibleColumn is not null)
+            {
+                _grid.CurrentCell = row.Cells[firstVisibleColumn.Index];
+            }
+        }
+
+        _rowContextMenu.Show(_grid, e.Location);
     }
 
     private Control BuildBottomPanel()

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-alpha.10
+
+- Added a right-click context menu to monitored-application rows.
+- The row context menu mirrors the dashboard command bar: Add, Edit, Delete, Start, Stop, Restart, Pause durations, Resume, Logs and Refresh.
+- Right-clicking a row now selects that row before showing commands, preventing actions from targeting a previously selected application.
 ## 0.1.0-alpha.9
 
 - Prevented application-editor field labels from wrapping at awkward positions.
