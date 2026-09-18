@@ -13,9 +13,10 @@ internal sealed class SettingsForm : Form
     {
         Text = Localization.T("SettingsTitle");
         StartPosition = FormStartPosition.CenterParent;
-        Width = 560;
-        Height = 360;
-        MinimumSize = new Size(520, 330);
+        AutoScaleMode = AutoScaleMode.Dpi;
+        Width = 620;
+        Height = 380;
+        MinimumSize = new Size(560, 340);
 
         _language.DropDownStyle = ComboBoxStyle.DropDownList;
         _language.Items.Add(new LocalizedOption<UiLanguage>(UiLanguage.Auto, Localization.T("LanguageAuto")));
@@ -127,8 +128,15 @@ internal sealed class SettingsForm : Form
             Anchor = AnchorStyles.Left,
             Margin = new Padding(3, 8, 3, 8)
         }, 0, row);
-        control.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         control.Margin = new Padding(3, 5, 3, 5);
+        if (control is ComboBox)
+        {
+            control.Dock = DockStyle.Fill;
+        }
+        else
+        {
+            control.Anchor = AnchorStyles.Left;
+        }
         table.Controls.Add(control, 1, row);
     }
 

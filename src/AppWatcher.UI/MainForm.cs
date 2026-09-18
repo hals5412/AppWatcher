@@ -24,30 +24,47 @@ internal sealed class MainForm : Form
     {
         Text = "AppWatcher";
         StartPosition = FormStartPosition.CenterScreen;
-        Width = 1120;
-        Height = 650;
-        MinimumSize = new Size(900, 500);
+        AutoScaleMode = AutoScaleMode.Dpi;
+        Width = 1180;
+        Height = 680;
+        MinimumSize = new Size(940, 520);
 
         var menu = BuildMenu();
         MainMenuStrip = menu;
-        Controls.Add(menu);
 
-        _hostStatus.Dock = DockStyle.Top;
-        _hostStatus.Height = 28;
+        _hostStatus.Dock = DockStyle.Fill;
         _hostStatus.Padding = new Padding(8, 6, 8, 0);
-        Controls.Add(_hostStatus);
 
         ConfigureGrid();
-        Controls.Add(_grid);
 
         var bottom = BuildBottomPanel();
-        Controls.Add(bottom);
 
         _summary.AutoSize = false;
-        _summary.Dock = DockStyle.Bottom;
-        _summary.Height = 26;
+        _summary.Dock = DockStyle.Fill;
         _summary.Padding = new Padding(8, 5, 8, 0);
-        Controls.Add(_summary);
+
+        // Keep the grid in its own layout row. With several independently docked
+        // controls, WinForms z-order can otherwise cover the column header row.
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 4,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+        layout.Controls.Add(_hostStatus, 0, 0);
+        layout.Controls.Add(_grid, 0, 1);
+        layout.Controls.Add(bottom, 0, 2);
+        layout.Controls.Add(_summary, 0, 3);
+
+        Controls.Add(layout);
+        Controls.Add(menu);
 
         _refreshTimer.Interval = 2000;
         _refreshTimer.Tick += async (_, _) => await RefreshDashboardAsync();
@@ -60,6 +77,7 @@ internal sealed class MainForm : Form
         Shown += async (_, _) =>
         {
             await EnsureNormalAgentStartedAsync();
+            await EnsureConfiguredHostsStartedAsync();
             await RefreshDashboardAsync();
             _refreshTimer.Start();
         };
@@ -119,25 +137,36 @@ internal sealed class MainForm : Form
         _grid.MultiSelect = false;
         _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _grid.AutoGenerateColumns = false;
+        _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
         _grid.RowHeadersVisible = false;
+        _grid.ColumnHeadersVisible = true;
+        _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        _grid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
+        _grid.AllowUserToResizeColumns = true;
+        _grid.AllowUserToOrderColumns = true;
+        _grid.ScrollBars = ScrollBars.Both;
+        _grid.ShowCellToolTips = true;
         _grid.BackgroundColor = SystemColors.Window;
         _grid.BorderStyle = BorderStyle.Fixed3D;
+        _grid.CellToolTipTextNeeded += (_, e) =>
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            e.ToolTipText = _grid.Rows[e.RowIndex].Cells[e.ColumnIndex].FormattedValue?.ToString();
+        };
         _grid.CellDoubleClick += async (_, e) =>
         {
             if (e.RowIndex >= 0) await EditSelectedAsync();
         };
 
-        _grid.Columns.Add(Column("Application", Localization.T("ColumnApplication"), 190));
-        _grid.Columns.Add(Column("Status", Localization.T("ColumnStatus"), 105));
-        _grid.Columns.Add(Column("Privilege", Localization.T("ColumnPrivilege"), 75));
-        _grid.Columns.Add(Column("PID", "PID", 65));
+        _grid.Columns.Add(Column("Application", Localization.T("ColumnApplication"), 170));
+        _grid.Columns.Add(Column("Status", Localization.T("ColumnStatus"), 110));
+        _grid.Columns.Add(Column("Privilege", Localization.T("ColumnPrivilege"), 90));
+        _grid.Columns.Add(Column("PID", "PID", 70));
         _grid.Columns.Add(Column("Uptime", Localization.T("ColumnUptime"), 105));
-        _grid.Columns.Add(Column("Restarts", Localization.T("ColumnRestarts"), 70));
-        _grid.Columns.Add(Column("LastEvent", Localization.T("ColumnLastEvent"), 160));
-        _grid.Columns.Add(Column("Reason", Localization.T("ColumnReason"), 180));
-        var path = Column("Executable", Localization.T("ColumnExecutable"), 280);
-        path.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-        _grid.Columns.Add(path);
+        _grid.Columns.Add(Column("Restarts", Localization.T("ColumnRestarts"), 95));
+        _grid.Columns.Add(Column("LastEvent", Localization.T("ColumnLastEvent"), 170));
+        _grid.Columns.Add(Column("Reason", Localization.T("ColumnReason"), 210));
+        _grid.Columns.Add(Column("Executable", Localization.T("ColumnExecutable"), 420));
     }
 
     private static DataGridViewTextBoxColumn Column(string name, string header, int width) => new()
@@ -145,7 +174,9 @@ internal sealed class MainForm : Form
         Name = name,
         HeaderText = header,
         Width = width,
-        SortMode = DataGridViewColumnSortMode.Automatic
+        MinimumWidth = 50,
+        SortMode = DataGridViewColumnSortMode.Automatic,
+        AutoSizeMode = DataGridViewAutoSizeColumnMode.None
     };
 
     private Control BuildBottomPanel()
@@ -199,7 +230,7 @@ internal sealed class MainForm : Form
         await Task.Delay(500);
     }
 
-    private void StartHost(string fileName, bool elevated, bool showErrors = true)
+    private bool StartHost(string fileName, bool elevated, bool showErrors = true)
     {
         var path = Path.Combine(AppContext.BaseDirectory, fileName);
         if (!File.Exists(path))
@@ -208,7 +239,7 @@ internal sealed class MainForm : Form
             {
                 MessageBox.Show(this, Localization.F("HostExecutableNotFound", path), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            return;
+            return false;
         }
 
         try
@@ -220,10 +251,12 @@ internal sealed class MainForm : Form
                 Verb = elevated ? "runas" : string.Empty,
                 WorkingDirectory = AppContext.BaseDirectory
             });
+            return true;
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
             // UAC cancelled.
+            return false;
         }
         catch (Exception ex)
         {
@@ -231,7 +264,77 @@ internal sealed class MainForm : Form
             {
                 MessageBox.Show(this, ex.Message, "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            return false;
         }
+    }
+
+    private async Task EnsureConfiguredHostsStartedAsync()
+    {
+        var config = await _configService.LoadAsync();
+        if (!config.Applications.Any(a => a.Privilege == PrivilegeLevel.Administrator && a.MonitoringEnabled))
+        {
+            return;
+        }
+
+        var ping = await _adminClient.SendAsync(
+            new SupervisorRequest(SupervisorCommandType.Ping),
+            TimeSpan.FromMilliseconds(350));
+        if (ping.Success) return;
+
+        // Do not show UAC just because the dashboard was opened. If startup tasks
+        // are installed, however, we can start the elevated helper silently.
+        if (TaskSchedulerInstaller.TryStartRegisteredHost(PrivilegeLevel.Administrator))
+        {
+            await WaitForHostAsync(_adminClient, TimeSpan.FromSeconds(3));
+        }
+    }
+
+    private async Task EnsureHostForDefinitionAsync(ApplicationDefinition definition)
+    {
+        var client = definition.Privilege == PrivilegeLevel.Administrator ? _adminClient : _normalClient;
+        var ping = await client.SendAsync(
+            new SupervisorRequest(SupervisorCommandType.Ping),
+            TimeSpan.FromMilliseconds(350));
+        if (ping.Success) return;
+
+        var started = TaskSchedulerInstaller.TryStartRegisteredHost(definition.Privilege);
+        if (started && await WaitForHostAsync(client, TimeSpan.FromSeconds(3)))
+        {
+            return;
+        }
+
+        started = definition.Privilege == PrivilegeLevel.Administrator
+            ? StartHost("AppWatcher.Elevated.exe", elevated: true)
+            : StartHost("AppWatcher.Agent.exe", elevated: false);
+
+        if (started && await WaitForHostAsync(client, TimeSpan.FromSeconds(4)))
+        {
+            return;
+        }
+
+        if (definition.Privilege == PrivilegeLevel.Administrator)
+        {
+            MessageBox.Show(
+                this,
+                Localization.F("CommandFailed", definition.Name, Localization.T("ElevatedOffline")),
+                "AppWatcher",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
+    }
+
+    private static async Task<bool> WaitForHostAsync(SupervisorClient client, TimeSpan timeout)
+    {
+        var deadline = DateTimeOffset.UtcNow + timeout;
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            var ping = await client.SendAsync(
+                new SupervisorRequest(SupervisorCommandType.Ping),
+                TimeSpan.FromMilliseconds(300));
+            if (ping.Success) return true;
+            await Task.Delay(250);
+        }
+        return false;
     }
 
     private async Task RefreshDashboardAsync()
@@ -249,9 +352,31 @@ internal sealed class MainForm : Form
             _normalHost = normal.Success ? normal.Snapshot : null;
             _adminHost = admin.Success ? admin.Snapshot : null;
 
+            var config = await _configService.LoadAsync();
+            var snapshots = new Dictionary<Guid, ApplicationSnapshot>();
+            if (_normalHost is not null)
+            {
+                foreach (var app in _normalHost.Applications) snapshots[app.Id] = app;
+            }
+            if (_adminHost is not null)
+            {
+                foreach (var app in _adminHost.Applications) snapshots[app.Id] = app;
+            }
+
+            // The configuration is the dashboard's source of truth. This keeps an
+            // administrator application visible even when Elevated Helper is offline,
+            // instead of making a successfully saved application appear to vanish.
             var apps = new List<ApplicationSnapshot>();
-            if (_normalHost is not null) apps.AddRange(_normalHost.Applications);
-            if (_adminHost is not null) apps.AddRange(_adminHost.Applications);
+            foreach (var definition in config.Applications)
+            {
+                apps.Add(snapshots.Remove(definition.Id, out var snapshot)
+                    ? snapshot
+                    : CreateUnavailableSnapshot(definition));
+            }
+
+            // Preserve visibility of a transient host snapshot until the configuration
+            // catches up (for example, while a save/reload is in flight).
+            apps.AddRange(snapshots.Values);
 
             _grid.Rows.Clear();
             foreach (var app in apps.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
@@ -274,7 +399,7 @@ internal sealed class MainForm : Form
 
             var healthy = apps.Count(a => a.State == AppRuntimeState.Healthy);
             var paused = apps.Count(a => a.State == AppRuntimeState.Paused);
-            var problems = apps.Count(a => a.State is AppRuntimeState.Failed or AppRuntimeState.Backoff or AppRuntimeState.Unresponsive);
+            var problems = apps.Count(a => a.State is AppRuntimeState.Failed or AppRuntimeState.Backoff or AppRuntimeState.Unresponsive or AppRuntimeState.Unknown);
             _summary.Text = Localization.F("SummaryFormat", healthy, paused, problems, apps.Count);
             UpdateHostStatus(normal.Error, admin.Error);
         }
@@ -282,6 +407,37 @@ internal sealed class MainForm : Form
         {
             _refreshGate.Release();
         }
+    }
+
+    private ApplicationSnapshot CreateUnavailableSnapshot(ApplicationDefinition definition)
+    {
+        var hostOnline = definition.Privilege == PrivilegeLevel.Administrator
+            ? _adminHost is not null
+            : _normalHost is not null;
+
+        var eventCode = hostOnline ? "ConfigurationPending" : "HostUnavailable";
+        var reasonCode = hostOnline
+            ? "ConfigurationReloadPending"
+            : definition.Privilege == PrivilegeLevel.Administrator
+                ? "ElevatedHelperOffline"
+                : "AgentOffline";
+
+        return new ApplicationSnapshot(
+            definition.Id,
+            definition.Name,
+            definition.Privilege,
+            AppRuntimeState.Unknown,
+            null,
+            null,
+            null,
+            0,
+            null,
+            false,
+            eventCode,
+            reasonCode,
+            definition.ExecutablePath,
+            definition.MonitoringEnabled,
+            definition.DetectHangs);
     }
 
     private void UpdateHostStatus(string? normalError, string? adminError)
@@ -306,6 +462,7 @@ internal sealed class MainForm : Form
             AppRuntimeState.Failed or AppRuntimeState.Backoff => Color.DarkRed,
             AppRuntimeState.Unresponsive => Color.DarkOrange,
             AppRuntimeState.Paused => Color.DimGray,
+            AppRuntimeState.Unknown => Color.DarkGoldenrod,
             _ => SystemColors.ControlText
         };
     }
@@ -331,6 +488,7 @@ internal sealed class MainForm : Form
         var config = await _configService.LoadAsync();
         config.Applications.Add(editor.Result);
         await _configService.SaveAsync(config);
+        await EnsureHostForDefinitionAsync(editor.Result);
         await ReloadHostsAsync();
     }
 
@@ -352,6 +510,7 @@ internal sealed class MainForm : Form
         var index = config.Applications.FindIndex(a => a.Id == selected.Id);
         if (index >= 0) config.Applications[index] = editor.Result;
         await _configService.SaveAsync(config);
+        await EnsureHostForDefinitionAsync(editor.Result);
         await ReloadHostsAsync();
     }
 
@@ -375,8 +534,12 @@ internal sealed class MainForm : Form
     private async Task ReloadHostsAsync()
     {
         await Task.WhenAll(
-            _normalClient.SendAsync(new SupervisorRequest(SupervisorCommandType.ReloadConfiguration)),
-            _adminClient.SendAsync(new SupervisorRequest(SupervisorCommandType.ReloadConfiguration)));
+            _normalClient.SendAsync(
+                new SupervisorRequest(SupervisorCommandType.ReloadConfiguration),
+                TimeSpan.FromSeconds(2)),
+            _adminClient.SendAsync(
+                new SupervisorRequest(SupervisorCommandType.ReloadConfiguration),
+                TimeSpan.FromSeconds(2)));
         await RefreshDashboardAsync();
     }
 

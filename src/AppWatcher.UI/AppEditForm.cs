@@ -9,24 +9,24 @@ internal sealed class AppEditForm : Form
     private readonly TextBox _args = new();
     private readonly TextBox _workingDir = new();
     private readonly ComboBox _privilege = new();
-    private readonly CheckBox _monitoringEnabled = new() { Text = Localization.T("MonitoringEnabled") };
-    private readonly CheckBox _startWithWatcher = new() { Text = Localization.T("StartWithWatcher") };
-    private readonly CheckBox _attachExisting = new() { Text = Localization.T("AttachExisting") };
+    private readonly CheckBox _monitoringEnabled = new() { Text = Localization.T("MonitoringEnabled"), AutoSize = true };
+    private readonly CheckBox _startWithWatcher = new() { Text = Localization.T("StartWithWatcher"), AutoSize = true };
+    private readonly CheckBox _attachExisting = new() { Text = Localization.T("AttachExisting"), AutoSize = true };
 
     private readonly ComboBox _restartPolicy = new();
     private readonly NumericUpDown _restartDelay = Number(0, 3600);
-    private readonly CheckBox _detectHangs = new() { Text = Localization.T("DetectUnresponsiveWindow") };
+    private readonly CheckBox _detectHangs = new() { Text = Localization.T("DetectUnresponsiveWindow"), AutoSize = true };
     private readonly NumericUpDown _hangTimeout = Number(5, 3600);
     private readonly NumericUpDown _hangInterval = Number(1, 300);
     private readonly NumericUpDown _startupGrace = Number(0, 3600);
 
-    private readonly CheckBox _loopProtection = new() { Text = Localization.T("EnableRestartLoopProtection") };
+    private readonly CheckBox _loopProtection = new() { Text = Localization.T("EnableRestartLoopProtection"), AutoSize = true };
     private readonly NumericUpDown _maxRestarts = Number(1, 1000);
     private readonly NumericUpDown _restartWindow = Number(1, 1440);
     private readonly NumericUpDown _backoff = Number(1, 1440);
     private readonly NumericUpDown _healthyReset = Number(1, 1440);
     private readonly NumericUpDown _gracefulShutdown = Number(1, 300);
-    private readonly CheckBox _forceKill = new() { Text = Localization.T("ForceTerminateAfterTimeout") };
+    private readonly CheckBox _forceKill = new() { Text = Localization.T("ForceTerminateAfterTimeout"), AutoSize = true };
     private readonly ComboBox _childPolicy = new();
     private readonly ComboBox _logLevel = new();
 
@@ -42,9 +42,10 @@ internal sealed class AppEditForm : Form
             ? Localization.T("TitleAddApplication")
             : Localization.F("TitleEditApplication", definition.Name);
         StartPosition = FormStartPosition.CenterParent;
-        Width = 760;
-        Height = 670;
-        MinimumSize = new Size(680, 580);
+        AutoScaleMode = AutoScaleMode.Dpi;
+        Width = 860;
+        Height = 720;
+        MinimumSize = new Size(760, 620);
 
         BindEnum(_privilege, Enum.GetValues<PrivilegeLevel>(), Localization.PrivilegeText);
         BindEnum(_restartPolicy, Enum.GetValues<RestartPolicy>(), Localization.RestartPolicyText);
@@ -117,7 +118,7 @@ internal sealed class AppEditForm : Form
         {
             Text = Localization.T("InteractiveLaunchInfo"),
             AutoSize = true,
-            MaximumSize = new Size(550, 0),
+            MaximumSize = new Size(780, 0),
             ForeColor = Color.DimGray
         });
         return page;
@@ -157,7 +158,7 @@ internal sealed class AppEditForm : Form
         {
             Text = Localization.T("ChildProcessPolicyInfo"),
             AutoSize = true,
-            MaximumSize = new Size(550, 0),
+            MaximumSize = new Size(780, 0),
             ForeColor = Color.DimGray
         });
         return page;
@@ -172,7 +173,7 @@ internal sealed class AppEditForm : Form
         AutoSize = false,
         ColumnStyles =
         {
-            new ColumnStyle(SizeType.Absolute, 220),
+            new ColumnStyle(SizeType.Absolute, 245),
             new ColumnStyle(SizeType.Percent, 100)
         }
     };
@@ -181,10 +182,22 @@ internal sealed class AppEditForm : Form
     {
         var row = table.RowCount++;
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        var caption = new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 8, 3, 8) };
-        control.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        var caption = new Label
+        {
+            Text = label,
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            Margin = new Padding(3, 8, 3, 8)
+        };
         control.Margin = new Padding(3, 5, 3, 5);
-        if (control is TextBox or ComboBox) control.Width = 440;
+        if (control is TextBox or ComboBox)
+        {
+            control.Dock = DockStyle.Fill;
+        }
+        else
+        {
+            control.Anchor = AnchorStyles.Left;
+        }
         table.Controls.Add(caption, 0, row);
         table.Controls.Add(control, 1, row);
     }
@@ -194,7 +207,15 @@ internal sealed class AppEditForm : Form
         var row = table.RowCount++;
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         control.Margin = new Padding(3, 8, 3, 8);
-        table.Controls.Add(control, 1, row);
+        if (control is CheckBox checkBox) checkBox.AutoSize = true;
+        if (control is Label label)
+        {
+            label.AutoSize = true;
+            label.MaximumSize = new Size(780, 0);
+        }
+        control.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        table.Controls.Add(control, 0, row);
+        table.SetColumnSpan(control, 2);
     }
 
     private static NumericUpDown Number(int min, int max) => new()

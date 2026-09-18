@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.4
+
+- Fixed the dashboard layout so column headers are always visible.
+- Dashboard columns can now be resized and reordered, with horizontal scrolling and cell tooltips.
+- Fixed clipped Japanese labels and check boxes in application/settings dialogs.
+- Configured applications remain visible even when their monitoring host is offline.
+- Adding an administrator application now starts Elevated Helper via Task Scheduler when possible, with UAC fallback when necessary.
+- Reduced configuration reload delays when a host is offline.
+
 ## 0.1.0-alpha.3
 
 - Added coordinated full shutdown of Agent and Elevated helper without terminating monitored applications.

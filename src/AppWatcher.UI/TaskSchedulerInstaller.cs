@@ -52,21 +52,25 @@ internal static class TaskSchedulerInstaller
         return Localization.T("StartupInstallSuccess");
     }
 
-    public static (bool Agent, bool Elevated) TryStartRegisteredHosts()
+    public static (bool Agent, bool Elevated) TryStartRegisteredHosts() =>
+        (TryStartRegisteredHost(PrivilegeLevel.Normal),
+         TryStartRegisteredHost(PrivilegeLevel.Administrator));
+
+    public static bool TryStartRegisteredHost(PrivilegeLevel privilege)
     {
         try
         {
             var serviceType = Type.GetTypeFromProgID("Schedule.Service");
-            if (serviceType is null) return (false, false);
+            if (serviceType is null) return false;
             dynamic service = Activator.CreateInstance(serviceType);
-            if (service is null) return (false, false);
+            if (service is null) return false;
             service.Connect();
             dynamic folder = service.GetFolder("\\AppWatcher");
-            return (TryRun(folder, "Agent"), TryRun(folder, "Elevated"));
+            return TryRun(folder, privilege == PrivilegeLevel.Administrator ? "Elevated" : "Agent");
         }
         catch
         {
-            return (false, false);
+            return false;
         }
     }
 
