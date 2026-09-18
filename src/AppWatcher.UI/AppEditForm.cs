@@ -46,10 +46,10 @@ internal sealed class AppEditForm : Form
         Height = 670;
         MinimumSize = new Size(680, 580);
 
-        BindEnum(_privilege, Enum.GetValues<PrivilegeLevel>(), Localization.Privilege);
-        BindEnum(_restartPolicy, Enum.GetValues<RestartPolicy>(), Localization.RestartPolicy);
-        BindEnum(_childPolicy, new[] { ChildProcessPolicy.Unmanaged }, Localization.ChildProcessPolicy);
-        BindEnum(_logLevel, Enum.GetValues<AppLogLevel>(), Localization.LogLevel);
+        BindEnum(_privilege, Enum.GetValues<PrivilegeLevel>(), Localization.PrivilegeText);
+        BindEnum(_restartPolicy, Enum.GetValues<RestartPolicy>(), Localization.RestartPolicyText);
+        BindEnum(_childPolicy, new[] { ChildProcessPolicy.Unmanaged }, Localization.ChildProcessPolicyText);
+        BindEnum(_logLevel, Enum.GetValues<AppLogLevel>(), Localization.LogLevelText);
 
         var tabs = new TabControl { Dock = DockStyle.Fill };
         tabs.TabPages.Add(BuildGeneralTab());
