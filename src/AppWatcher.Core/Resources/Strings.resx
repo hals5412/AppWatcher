@@ -810,16 +810,17 @@ Run Tools &gt; Install / repair startup tasks once to register the elevated help
     <value>Running</value>
   </data>
   <data name="StartupTaskPathMatches" xml:space="preserve">
-    <value>Executable path matches this AppWatcher folder.</value>
+    <value>Executable path and working directory match this AppWatcher folder.</value>
   </data>
   <data name="StartupTaskPathMismatch" xml:space="preserve">
-    <value>WARNING: Executable path differs from this AppWatcher folder. Run Install / repair startup tasks.</value>
+    <value>WARNING: Executable path or working directory differs from this AppWatcher folder. Run Install / repair startup tasks.</value>
   </data>
   <data name="StartupTaskInstalledFormat" xml:space="preserve">
     <value>{0}: Registered / {1} / {2}
 Executable: {3}
-{4}
-Last task result: {5}</value>
+Working directory: {4}
+{5}
+Last task result: {6}</value>
   </data>
   <data name="StartupTaskNotInstalledFormat" xml:space="preserve">
     <value>{0}: Not registered</value>
@@ -870,5 +871,57 @@ Last task result: {5}</value>
     <value>Could not retrieve the running-application list.
 
 {0}</value>
+  </data>
+  <data name="StartupSelfCheckTitle" xml:space="preserve">
+    <value>AppWatcher startup self-check</value>
+  </data>
+  <data name="StartupSelfCheckWarningFormat" xml:space="preserve">
+    <value>Startup configuration issue ({0}): {1}  Click for details.</value>
+  </data>
+  <data name="StartupSelfCheckNoIssues" xml:space="preserve">
+    <value>No startup issues are currently detected.</value>
+  </data>
+  <data name="StartupSelfCheckDetailsFormat" xml:space="preserve">
+    <value>Detected issues:
+{0}
+
+Startup task details:
+
+{1}
+
+Use Tools &gt; Install / repair startup tasks to repair missing, disabled, or stale startup registration. If a host is offline, use the corresponding Start command or restart AppWatcher.</value>
+  </data>
+  <data name="StartupSelfCheckAgentExecutableMissing" xml:space="preserve">
+    <value>AppWatcher.Agent.exe is missing from the current AppWatcher folder.</value>
+  </data>
+  <data name="StartupSelfCheckElevatedExecutableMissing" xml:space="preserve">
+    <value>AppWatcher.Elevated.exe is missing from the current AppWatcher folder.</value>
+  </data>
+  <data name="StartupSelfCheckTaskStatusUnavailable" xml:space="preserve">
+    <value>Windows Task Scheduler status could not be read.</value>
+  </data>
+  <data name="StartupSelfCheckAgentTaskMissing" xml:space="preserve">
+    <value>The Agent startup task is not registered.</value>
+  </data>
+  <data name="StartupSelfCheckAgentTaskDisabled" xml:space="preserve">
+    <value>The Agent startup task is disabled.</value>
+  </data>
+  <data name="StartupSelfCheckAgentTaskRegistrationMismatch" xml:space="preserve">
+    <value>The Agent startup task points to a different AppWatcher folder.</value>
+  </data>
+  <data name="StartupSelfCheckElevatedTaskMissing" xml:space="preserve">
+    <value>The administrator helper startup task is not registered.</value>
+  </data>
+  <data name="StartupSelfCheckElevatedTaskDisabled" xml:space="preserve">
+    <value>The administrator helper startup task is disabled.</value>
+  </data>
+  <data name="StartupSelfCheckElevatedTaskRegistrationMismatch" xml:space="preserve">
+    <value>The administrator helper startup task points to a different AppWatcher folder.</value>
+  </data>
+  <data name="StartupSelfCheckAgentOffline" xml:space="preserve">
+    <value>The AppWatcher Agent is offline.</value>
+  </data>
+  <data name="StartupSelfCheckElevatedOfflineRequired" xml:space="preserve">
+    <value>The administrator helper is offline while administrator applications require it.</value>
   </data>
 </root>

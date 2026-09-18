@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.16
+
+- Added an automatic startup self-check that surfaces problems only when action is needed.
+- The dashboard now checks Agent/Elevated binaries, startup-task registration, enabled state, executable path and working directory.
+- Agent connectivity is checked continuously; Elevated Helper connectivity is flagged when enabled administrator applications require it.
+- Startup-task inspection is cached for 15 seconds to avoid querying Task Scheduler on every two-second dashboard refresh.
+- Added a collapsible warning row with click-through diagnostics and repair guidance.
+- Expanded the existing startup-task status dialog to show and validate the registered working directory.
 ## 0.1.0-alpha.15
 
 - Added a versioned configuration migration pipeline and advanced the configuration schema to version 2.

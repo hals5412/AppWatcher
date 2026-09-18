@@ -9,6 +9,7 @@ internal sealed record StartupTaskInfo(
     int State,
     int LastTaskResult,
     string? ExecutablePath,
+    string? WorkingDirectory,
     string? Error = null);
 
 internal sealed record StartupTasksStatus(
@@ -72,7 +73,7 @@ internal static class TaskSchedulerInstaller
             if (serviceType is null)
             {
                 var unavailable = new StartupTaskInfo(
-                    false, false, 0, 0, null, Localization.T("TaskSchedulerUnavailable"));
+                    false, false, 0, 0, null, null, Localization.T("TaskSchedulerUnavailable"));
                 return new StartupTasksStatus(unavailable, unavailable);
             }
 
@@ -87,7 +88,7 @@ internal static class TaskSchedulerInstaller
             }
             catch
             {
-                var missing = new StartupTaskInfo(false, false, 0, 0, null);
+                var missing = new StartupTaskInfo(false, false, 0, 0, null, null);
                 return new StartupTasksStatus(missing, missing);
             }
 
@@ -97,7 +98,7 @@ internal static class TaskSchedulerInstaller
         }
         catch (Exception ex)
         {
-            var failed = new StartupTaskInfo(false, false, 0, 0, null, ex.Message);
+            var failed = new StartupTaskInfo(false, false, 0, 0, null, null, ex.Message);
             return new StartupTasksStatus(failed, failed);
         }
     }
@@ -108,12 +109,14 @@ internal static class TaskSchedulerInstaller
         {
             dynamic task = folder.GetTask(taskName);
             string? executablePath = null;
+            string? workingDirectory = null;
 
             try
             {
                 dynamic definition = task.Definition;
                 dynamic action = definition.Actions.Item(1);
                 executablePath = action.Path as string;
+                workingDirectory = action.WorkingDirectory as string;
             }
             catch
             {
@@ -125,11 +128,12 @@ internal static class TaskSchedulerInstaller
                 (bool)task.Enabled,
                 (int)task.State,
                 (int)task.LastTaskResult,
-                executablePath);
+                executablePath,
+                workingDirectory);
         }
         catch
         {
-            return new StartupTaskInfo(false, false, 0, 0, null);
+            return new StartupTaskInfo(false, false, 0, 0, null, null);
         }
     }
 

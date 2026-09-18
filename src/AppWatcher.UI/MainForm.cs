@@ -30,6 +30,8 @@ internal sealed class MainForm : Form
 
     private readonly Label _summary = new();
     private readonly Label _hostStatus = new();
+    private readonly LinkLabel _startupWarning = new();
+    private readonly TableLayoutPanel _mainLayout = new();
     private readonly System.Windows.Forms.Timer _refreshTimer = new();
     private readonly System.Windows.Forms.Timer _lifecycleTimer = new();
     private readonly EventWaitHandle _uiExitEvent = LifecycleSignals.CreateUiExitEvent();
@@ -37,6 +39,9 @@ internal sealed class MainForm : Form
 
     private HostSnapshot? _normalHost;
     private HostSnapshot? _adminHost;
+    private StartupTasksStatus? _cachedStartupTasksStatus;
+    private DateTimeOffset _nextStartupTaskCheckUtc = DateTimeOffset.MinValue;
+    private IReadOnlyList<string> _startupSelfCheckIssues = [];
     private bool _columnLayoutLoaded;
     private bool _columnLayoutDirty;
 
@@ -55,6 +60,17 @@ internal sealed class MainForm : Form
         _hostStatus.Dock = DockStyle.Fill;
         _hostStatus.Padding = new Padding(8, 8, 8, 0);
 
+        _startupWarning.Dock = DockStyle.Fill;
+        _startupWarning.AutoSize = false;
+        _startupWarning.Padding = new Padding(8, 5, 8, 0);
+        _startupWarning.BackColor = SystemColors.Info;
+        _startupWarning.ForeColor = SystemColors.InfoText;
+        _startupWarning.LinkColor = SystemColors.InfoText;
+        _startupWarning.ActiveLinkColor = SystemColors.HotTrack;
+        _startupWarning.LinkBehavior = LinkBehavior.HoverUnderline;
+        _startupWarning.Visible = false;
+        _startupWarning.LinkClicked += async (_, _) => await ShowStartupSelfCheckDetailsAsync();
+
         ConfigureGrid();
         ConfigureRowContextMenu();
 
@@ -64,27 +80,26 @@ internal sealed class MainForm : Form
         _summary.Dock = DockStyle.Fill;
         _summary.Padding = new Padding(8, 7, 8, 0);
 
-        // Keep the grid in its own layout row. With several independently docked
-        // controls, WinForms z-order can otherwise cover the column header row.
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 4,
-            Margin = Padding.Empty,
-            Padding = Padding.Empty
-        };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
-        layout.Controls.Add(_hostStatus, 0, 0);
-        layout.Controls.Add(_grid, 0, 1);
-        layout.Controls.Add(bottom, 0, 2);
-        layout.Controls.Add(_summary, 0, 3);
+        // Keep the grid in its own layout row. The startup self-check warning row
+        // collapses to zero height while the startup configuration is healthy.
+        _mainLayout.Dock = DockStyle.Fill;
+        _mainLayout.ColumnCount = 1;
+        _mainLayout.RowCount = 5;
+        _mainLayout.Margin = Padding.Empty;
+        _mainLayout.Padding = Padding.Empty;
+        _mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+        _mainLayout.Controls.Add(_hostStatus, 0, 0);
+        _mainLayout.Controls.Add(_startupWarning, 0, 1);
+        _mainLayout.Controls.Add(_grid, 0, 2);
+        _mainLayout.Controls.Add(bottom, 0, 3);
+        _mainLayout.Controls.Add(_summary, 0, 4);
 
-        Controls.Add(layout);
+        Controls.Add(_mainLayout);
         Controls.Add(menu);
 
         _refreshTimer.Interval = 2000;
@@ -563,6 +578,9 @@ internal sealed class MainForm : Form
     private void ShowStartupTaskStatus()
     {
         var status = TaskSchedulerInstaller.GetStatus();
+        _cachedStartupTasksStatus = status;
+        _nextStartupTaskCheckUtc = DateTimeOffset.UtcNow.AddSeconds(15);
+
         var expectedAgent = Path.Combine(AppContext.BaseDirectory, "AppWatcher.Agent.exe");
         var expectedElevated = Path.Combine(AppContext.BaseDirectory, "AppWatcher.Elevated.exe");
 
@@ -582,8 +600,168 @@ internal sealed class MainForm : Form
             text,
             Localization.T("StartupTaskStatusTitle"),
             MessageBoxButtons.OK,
-            status.Agent.Installed && status.Agent.Enabled &&
-            status.Elevated.Installed && status.Elevated.Enabled
+            IsStartupTaskHealthy(status.Agent, expectedAgent) &&
+            IsStartupTaskHealthy(status.Elevated, expectedElevated)
+                ? MessageBoxIcon.Information
+                : MessageBoxIcon.Warning);
+    }
+
+    private void UpdateStartupSelfCheck(
+        AppWatcherConfiguration config,
+        bool forceTaskRefresh = false)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (forceTaskRefresh ||
+            _cachedStartupTasksStatus is null ||
+            now >= _nextStartupTaskCheckUtc)
+        {
+            _cachedStartupTasksStatus = TaskSchedulerInstaller.GetStatus();
+            _nextStartupTaskCheckUtc = now.AddSeconds(15);
+        }
+
+        var issues = new List<string>();
+        var expectedAgent = Path.Combine(AppContext.BaseDirectory, "AppWatcher.Agent.exe");
+        var expectedElevated = Path.Combine(AppContext.BaseDirectory, "AppWatcher.Elevated.exe");
+
+        if (!File.Exists(expectedAgent))
+        {
+            issues.Add(Localization.T("StartupSelfCheckAgentExecutableMissing"));
+        }
+
+        if (!File.Exists(expectedElevated))
+        {
+            issues.Add(Localization.T("StartupSelfCheckElevatedExecutableMissing"));
+        }
+
+        var taskStatus = _cachedStartupTasksStatus;
+        if (taskStatus is not null)
+        {
+            var taskStatusError =
+                taskStatus.Agent.Error ??
+                taskStatus.Elevated.Error;
+
+            if (!string.IsNullOrWhiteSpace(taskStatusError))
+            {
+                issues.Add(Localization.T("StartupSelfCheckTaskStatusUnavailable"));
+            }
+            else
+            {
+                AddStartupTaskIssues(
+                    issues,
+                    taskStatus.Agent,
+                    expectedAgent,
+                    "StartupSelfCheckAgentTaskMissing",
+                    "StartupSelfCheckAgentTaskDisabled",
+                    "StartupSelfCheckAgentTaskRegistrationMismatch");
+
+                AddStartupTaskIssues(
+                    issues,
+                    taskStatus.Elevated,
+                    expectedElevated,
+                    "StartupSelfCheckElevatedTaskMissing",
+                    "StartupSelfCheckElevatedTaskDisabled",
+                    "StartupSelfCheckElevatedTaskRegistrationMismatch");
+            }
+        }
+
+        if (_normalHost is null)
+        {
+            issues.Add(Localization.T("StartupSelfCheckAgentOffline"));
+        }
+
+        var administratorHostRequired = config.Applications.Any(application =>
+            application.Privilege == PrivilegeLevel.Administrator &&
+            application.MonitoringEnabled);
+
+        if (administratorHostRequired && _adminHost is null)
+        {
+            issues.Add(Localization.T("StartupSelfCheckElevatedOfflineRequired"));
+        }
+
+        _startupSelfCheckIssues = issues
+            .Distinct(StringComparer.CurrentCulture)
+            .ToArray();
+
+        if (_startupSelfCheckIssues.Count == 0)
+        {
+            _startupWarning.Visible = false;
+            _startupWarning.Text = string.Empty;
+            _startupWarning.Links.Clear();
+            _mainLayout.RowStyles[1].Height = 0;
+            return;
+        }
+
+        var firstIssue = _startupSelfCheckIssues[0];
+        _startupWarning.Text = Localization.F(
+            "StartupSelfCheckWarningFormat",
+            _startupSelfCheckIssues.Count,
+            firstIssue);
+        _startupWarning.Links.Clear();
+        _startupWarning.Links.Add(0, _startupWarning.Text.Length);
+        _startupWarning.Visible = true;
+        _mainLayout.RowStyles[1].Height = 32;
+    }
+
+    private static void AddStartupTaskIssues(
+        ICollection<string> issues,
+        StartupTaskInfo info,
+        string expectedExecutable,
+        string missingResource,
+        string disabledResource,
+        string mismatchResource)
+    {
+        if (!info.Installed)
+        {
+            issues.Add(Localization.T(missingResource));
+            return;
+        }
+
+        if (!info.Enabled)
+        {
+            issues.Add(Localization.T(disabledResource));
+        }
+
+        if (!StartupTaskRegistrationMatches(info, expectedExecutable))
+        {
+            issues.Add(Localization.T(mismatchResource));
+        }
+    }
+
+    private async Task ShowStartupSelfCheckDetailsAsync()
+    {
+        var config = await _configService.LoadAsync();
+        UpdateStartupSelfCheck(config, forceTaskRefresh: true);
+
+        var status = _cachedStartupTasksStatus ?? TaskSchedulerInstaller.GetStatus();
+        var expectedAgent = Path.Combine(AppContext.BaseDirectory, "AppWatcher.Agent.exe");
+        var expectedElevated = Path.Combine(AppContext.BaseDirectory, "AppWatcher.Elevated.exe");
+
+        var issues = _startupSelfCheckIssues.Count == 0
+            ? Localization.T("StartupSelfCheckNoIssues")
+            : string.Join(
+                Environment.NewLine,
+                _startupSelfCheckIssues.Select(issue => $"• {issue}"));
+
+        var taskDetails = string.Join(
+            Environment.NewLine + Environment.NewLine,
+            FormatStartupTaskStatus(
+                Localization.T("StartupTaskAgentLabel"),
+                status.Agent,
+                expectedAgent),
+            FormatStartupTaskStatus(
+                Localization.T("StartupTaskElevatedLabel"),
+                status.Elevated,
+                expectedElevated));
+
+        MessageBox.Show(
+            this,
+            Localization.F(
+                "StartupSelfCheckDetailsFormat",
+                issues,
+                taskDetails),
+            Localization.T("StartupSelfCheckTitle"),
+            MessageBoxButtons.OK,
+            _startupSelfCheckIssues.Count == 0
                 ? MessageBoxIcon.Information
                 : MessageBoxIcon.Warning);
     }
@@ -613,7 +791,8 @@ internal sealed class MainForm : Form
         };
 
         var registeredPath = info.ExecutablePath ?? "-";
-        var pathMatches = PathsEqual(registeredPath, expectedPath)
+        var registeredWorkingDirectory = info.WorkingDirectory ?? "-";
+        var registrationMatches = StartupTaskRegistrationMatches(info, expectedPath)
             ? Localization.T("StartupTaskPathMatches")
             : Localization.T("StartupTaskPathMismatch");
 
@@ -623,24 +802,45 @@ internal sealed class MainForm : Form
             enabled,
             state,
             registeredPath,
-            pathMatches,
+            registeredWorkingDirectory,
+            registrationMatches,
             $"0x{info.LastTaskResult:X8}");
     }
+
+    private static bool IsStartupTaskHealthy(
+        StartupTaskInfo info,
+        string expectedExecutable) =>
+        info.Installed &&
+        info.Enabled &&
+        string.IsNullOrWhiteSpace(info.Error) &&
+        StartupTaskRegistrationMatches(info, expectedExecutable);
+
+    private static bool StartupTaskRegistrationMatches(
+        StartupTaskInfo info,
+        string expectedExecutable) =>
+        PathsEqual(info.ExecutablePath ?? string.Empty, expectedExecutable) &&
+        PathsEqual(info.WorkingDirectory ?? string.Empty, AppContext.BaseDirectory);
 
     private static bool PathsEqual(string left, string right)
     {
         try
         {
             return string.Equals(
-                Path.GetFullPath(left.Trim().Trim('"')),
-                Path.GetFullPath(right.Trim().Trim('"')),
+                Path.TrimEndingDirectorySeparator(
+                    Path.GetFullPath(left.Trim().Trim('"'))),
+                Path.TrimEndingDirectorySeparator(
+                    Path.GetFullPath(right.Trim().Trim('"'))),
                 StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
             return string.Equals(
-                left.Trim().Trim('"'),
-                right.Trim().Trim('"'),
+                left.Trim().Trim('"').TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar),
+                right.Trim().Trim('"').TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar),
                 StringComparison.OrdinalIgnoreCase);
         }
     }
@@ -832,6 +1032,7 @@ internal sealed class MainForm : Form
             var problems = apps.Count(a => a.State is AppRuntimeState.Failed or AppRuntimeState.Backoff or AppRuntimeState.Unresponsive or AppRuntimeState.Unknown);
             _summary.Text = Localization.F("SummaryFormat", healthy, paused, problems, apps.Count);
             UpdateHostStatus(normal.Error, admin.Error);
+            UpdateStartupSelfCheck(config);
             UpdateCommandAvailability();
         }
         finally
