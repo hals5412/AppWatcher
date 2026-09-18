@@ -1,0 +1,39 @@
+name: build
+
+on:
+  push:
+    branches: [ main, "feature/**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore .\AppWatcher.sln
+
+      - name: Build
+        run: dotnet build .\AppWatcher.sln -c Release --no-restore
+
+      - name: Publish combined framework-dependent package
+        shell: pwsh
+        run: .\scripts\publish.ps1
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppWatcher-win-x64
+          path: artifacts/AppWatcher-win-x64.zip
+          if-no-files-found: error

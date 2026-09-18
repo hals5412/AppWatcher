@@ -1,0 +1,151 @@
+# AppWatcher
+
+AppWatcher is a lightweight Windows supervisor for long-running desktop applications. It is designed for applications such as **TVRock**, **TVTest**, Libre Hardware Monitor, recording utilities, and other software that should normally stay running.
+
+> Status: **v0.1.0-alpha / first implementation**. The core architecture is in place, but this version still needs Windows build/runtime testing before it should replace an existing watchdog in production.
+
+## Design goals
+
+- Detect process exits and restart applications automatically.
+- Optionally detect a hung GUI window and recover it.
+- Keep normal-user and administrator applications in one dashboard.
+- Make monitoring easy to pause during maintenance.
+- Record *what happened, what AppWatcher decided, and why*.
+- Keep the always-running components small and event-driven.
+- Avoid changing the execution environment of monitored applications.
+- Never hide, sandbox, or move monitored GUI applications to Session 0.
+- Do **not** place monitored applications in a Windows Job Object by default.
+- Do **not** terminate child processes by default.
+
+The last three points are deliberate compatibility requirements for programs such as TVRock that may launch TVTest or other GUI child processes. A program started by AppWatcher should behave as closely as practical to one launched normally from the logged-on Windows desktop.
+
+## Components
+
+| Component | Purpose |
+| --- | --- |
+| `AppWatcher.Agent.exe` | Normal-user monitoring host and tray icon. |
+| `AppWatcher.Elevated.exe` | Administrator monitoring host. No visible window. |
+| `AppWatcher.UI.exe` | Dashboard, configuration editor, event log, diagnostics. Only runs when needed. |
+| `AppWatcher.Core.dll` | Shared monitoring, configuration, logging and IPC logic. |
+
+The Agent and Elevated helper run in the **interactive logged-on user session**. They are not Windows services.
+
+## Implemented in this alpha
+
+- Full-path process matching and attachment to already-running applications.
+- Event-driven process exit detection (`Process.Exited`) rather than process-list polling.
+- Interactive process launch with normal windows; no hidden desktop / Session 0 / Job Object.
+- Restart on unexpected exit.
+- Configurable restart delay.
+- GUI-hang checking with a startup grace period and timeout.
+- Restart-loop protection and backoff.
+- Per-application timed or indefinite pause.
+- Global maintenance mode.
+- Graceful close followed by optional force termination of the **parent only**.
+- Normal and elevated monitoring hosts with separate named-pipe endpoints.
+- WinForms dashboard with a combined normal/admin application list.
+- Host PID, uptime and working-set display.
+- JSON configuration with three rotating backups.
+- SQLite event history in WAL mode.
+- Detailed reason codes for automatic decisions.
+- Event log viewer.
+- Diagnostic ZIP creation with obvious secret-like command-line arguments masked.
+- Task Scheduler setup for normal and highest-privilege startup at user logon.
+
+## Important compatibility behavior
+
+For a normal application AppWatcher uses the logged-on user's interactive token and normal desktop. The launch code intentionally does **not** use `CREATE_NO_WINDOW`, `DETACHED_PROCESS`, a hidden desktop, a service, or a Job Object.
+
+The default child-process policy is **Unmanaged**. For example:
+
+```text
+AppWatcher.Agent
+  └─ TVRock
+       └─ TVTest
+```
+
+AppWatcher monitors TVRock without taking ownership of TVTest. TVTest should therefore be able to display normally on the desktop. This behavior is a mandatory manual test before the first stable release.
+
+## Requirements
+
+Development:
+
+- Windows 10/11
+- .NET 10 SDK
+- Visual Studio 2022+ with .NET desktop development workload, or the `dotnet` CLI
+
+Framework-dependent published builds require the .NET 10 Desktop Runtime. The publish script can also make a self-contained build.
+
+## Build
+
+```powershell
+dotnet restore .\AppWatcher.sln
+dotnet build .\AppWatcher.sln -c Release
+```
+
+To create a combined runnable folder:
+
+```powershell
+.\scripts\publish.ps1
+```
+
+For a self-contained win-x64 package:
+
+```powershell
+.\scripts\publish.ps1 -SelfContained
+```
+
+## First run
+
+1. Publish AppWatcher so `AppWatcher.Agent.exe`, `AppWatcher.Elevated.exe`, and `AppWatcher.UI.exe` are in the same folder.
+2. Start `AppWatcher.UI.exe`.
+3. Open **Tools → Install / repair startup tasks...**.
+4. Approve the one-time UAC prompt.
+5. Add monitored applications from the dashboard.
+
+The startup installer creates two Task Scheduler tasks under `\AppWatcher`:
+
+- `Agent`: interactive normal-user token.
+- `Elevated`: interactive token with highest privileges.
+
+This avoids a UAC prompt every time an administrator application has to be restarted, while still keeping it in the logged-on desktop session.
+
+## Data files
+
+Stored under:
+
+```text
+%LOCALAPPDATA%\AppWatcher\
+```
+
+Main files:
+
+```text
+config.json
+config.backup-1.json
+config.backup-2.json
+config.backup-3.json
+events.db
+events.db-wal
+events.db-shm
+appwatcher-fallback.log
+```
+
+## Safety / operational behavior
+
+Stopping AppWatcher itself **does not terminate monitored applications**. Removing an application from configuration also leaves the target process running.
+
+`Stop` from the dashboard is an intentional target stop and suppresses automatic restart. A later externally caused exit is treated according to that application's restart policy.
+
+On Windows session-ending notification, AppWatcher marks shutdown in progress and suppresses new automatic launches.
+
+## Known alpha limitations
+
+- Timed pause / maintenance state currently lives in host memory; persistence across an unexpected AppWatcher host restart is planned.
+- `ChildProcessPolicy.TrackOnly` and `StopWithParent` are reserved for future versions; v0.1 only uses `Unmanaged` in the UI.
+- TCP/HTTP health checks are not yet implemented.
+- Per-target CPU/RAM history is not collected. This is intentional until the overhead model is measured.
+- Update checking is intentionally disabled by default and is not implemented in this alpha.
+- The project has not yet been compiled in CI at the time this source bundle was generated; the first GitHub Actions run is expected to catch any environment-specific build issue.
+
+See [`docs/specification.md`](docs/specification.md), [`docs/architecture.md`](docs/architecture.md), and [`docs/manual-test-plan.md`](docs/manual-test-plan.md).

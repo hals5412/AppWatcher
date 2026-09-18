@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "applications": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "name": "TVRock",
+      "executablePath": "C:\\software\\TvRock\\tvrock.exe",
+      "arguments": "",
+      "workingDirectory": "C:\\software\\TvRock",
+      "privilege": "Normal",
+      "monitoringEnabled": true,
+      "startWithWatcher": true,
+      "attachExisting": true,
+      "restartPolicy": "AnyUnexpectedExit",
+      "restartDelaySeconds": 5,
+      "detectHangs": true,
+      "hangTimeoutSeconds": 60,
+      "hangCheckIntervalSeconds": 10,
+      "startupGraceSeconds": 15,
+      "restartLoopProtectionEnabled": true,
+      "maxRestarts": 5,
+      "restartWindowMinutes": 10,
+      "backoffMinutes": 15,
+      "healthyResetMinutes": 30,
+      "gracefulShutdownSeconds": 10,
+      "forceKillAfterTimeout": true,
+      "childProcessPolicy": "Unmanaged",
+      "logLevel": "Information"
+    }
+  ],
+  "global": {
+    "eventRetentionDays": 90,
+    "eventDatabaseMaxMegabytes": 100,
+    "uiRefreshSeconds": 2,
+    "checkForUpdates": false
+  }
+}
