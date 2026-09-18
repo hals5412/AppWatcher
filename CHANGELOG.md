@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-alpha.9
+
+- Prevented application-editor field labels from wrapping at awkward positions.
+- Widened the field-label column while retaining full-width path controls.
+- Removed product-specific names from child-process policy help text.
 ## 0.1.0-alpha.8
 
 - Replaced the sparse Settings tabs with one compact settings page.

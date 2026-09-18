@@ -73,7 +73,7 @@
     <value>アップデートを確認する</value>
   </data>
   <data name="ChildProcessPolicyInfo" xml:space="preserve">
-    <value>推奨: 子プロセスは管理しない。TVRockからTVTestなどのGUIアプリを起動する構成との互換性を保ちます。</value>
+    <value>推奨: 子プロセスは管理しない。監視対象アプリから別のGUIアプリを起動する構成との互換性を保ちます。</value>
   </data>
   <data name="ChildProcessPolicy_StopWithParent" xml:space="preserve">
     <value>親と一緒に停止</value>

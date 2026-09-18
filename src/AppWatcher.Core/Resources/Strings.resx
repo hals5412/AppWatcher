@@ -73,7 +73,7 @@
     <value>Check for updates</value>
   </data>
   <data name="ChildProcessPolicyInfo" xml:space="preserve">
-    <value>Recommended child-process policy: Unmanaged. This preserves compatibility with applications such as TVRock that start TVTest or other interactive GUI processes.</value>
+    <value>Recommended: leave child processes unmanaged. This preserves compatibility when monitored applications launch other interactive GUI processes.</value>
   </data>
   <data name="ChildProcessPolicy_StopWithParent" xml:space="preserve">
     <value>Stop with parent</value>

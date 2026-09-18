@@ -225,7 +225,7 @@ internal sealed class AppEditForm : Form
         AutoSize = false,
         ColumnStyles =
         {
-            new ColumnStyle(SizeType.Absolute, 190),
+            new ColumnStyle(SizeType.Absolute, 255),
             new ColumnStyle(SizeType.Percent, 100)
         }
     };
@@ -238,8 +238,10 @@ internal sealed class AppEditForm : Form
         var caption = new Label
         {
             Text = label,
-            AutoSize = true,
-            Anchor = AnchorStyles.Left,
+            AutoSize = false,
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft,
+            AutoEllipsis = true,
             Margin = new Padding(3, 8, 12, 8)
         };
 
