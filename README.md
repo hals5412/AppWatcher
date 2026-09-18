@@ -53,6 +53,10 @@ The Agent and Elevated helper run in the **interactive logged-on user session**.
 - Event log viewer.
 - Diagnostic ZIP creation with obvious secret-like command-line arguments masked.
 - Task Scheduler setup for normal and highest-privilege startup at user logon.
+- Automatic startup self-check for missing, disabled, or stale Task Scheduler registration.
+- Running-application picker with normal/elevated privilege detection.
+- Application-scoped event-log views keyed by stable application ID.
+- Versioned configuration schema migration with safe downgrade rejection.
 - Japanese and English UI with automatic Windows display-language selection.
 
 

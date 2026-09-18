@@ -26,6 +26,8 @@ try {
         "AppWatcher.UI.exe",
         "AppWatcher.Core.dll",
         "README.md",
+        "README.ja.md",
+        "CHANGELOG.md",
         "stop-appwatcher.ps1",
         "restart-appwatcher.ps1",
         "docs\specification.md",

@@ -26,7 +26,7 @@ The default launch path must not use:
 - forced window hiding
 - Windows Job Objects
 
-Child processes are unmanaged by default. This is required for TVRock → TVTest and similar application chains.
+Child processes are unmanaged by default. This preserves compatibility with desktop applications that launch separate GUI child processes which must remain independent of the monitored parent.
 
 ### 2.2 Event-driven when possible
 
@@ -187,6 +187,8 @@ Closing AppWatcher hosts does not kill target processes.
 ## 12. Configuration storage
 
 Configuration is JSON under `%LOCALAPPDATA%\AppWatcher`. Three generations of configuration backups are maintained. If the main file cannot be read, backups are tried in order.
+
+The configuration format is versioned. Schema 1 and pre-versioned files are migrated to the current schema before use, with the exact pre-migration file preserved as the newest backup. A configuration whose schema is newer than the running AppWatcher build supports is rejected instead of silently falling back to an older backup.
 
 ## 13. Diagnostics
 

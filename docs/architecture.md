@@ -7,11 +7,11 @@ Interactive Windows user session
 
   AppWatcher.Agent.exe (medium integrity)
        ├─ normal target A
-       └─ TVRock
-            └─ TVTest              <- unmanaged by AppWatcher
+       └─ normal target B
+            └─ GUI child           <- unmanaged by AppWatcher
 
   AppWatcher.Elevated.exe (high integrity)
-       └─ LibreHardwareMonitor
+       └─ administrator target
 
   AppWatcher.UI.exe (on demand)
        ├─ Named Pipe -> Agent
@@ -54,6 +54,8 @@ Current commands include snapshot, reload, start, stop, restart, pause/resume an
 
 `ConfigService` performs serialized reads/writes, rotates three backups, writes to a temporary file and then replaces the live JSON file.
 
+Configuration has an explicit schema version and migration pipeline. Older supported schemas are upgraded before use, while a configuration from a newer unsupported schema is rejected to avoid destructive downgrade behavior.
+
 Both supervisor hosts filter the same configuration by `PrivilegeLevel`.
 
 ## Event storage
@@ -80,4 +82,4 @@ The normal Agent does not try to elevate individual targets. Administrator appli
 
 The helper is elevated at logon through Task Scheduler, which avoids repeated UAC prompts on application restarts.
 
-The v0.1 named pipes rely on Windows' default per-process pipe DACL. Explicit SID-only ACL construction is planned as a hardening item before stable v1.
+Named-pipe servers use an explicit protected DACL that grants access to LocalSystem, built-in Administrators, and the current Windows user SID. No mandatory-integrity SACL is added, allowing the medium-integrity UI and the high-integrity helper for the same user to communicate while avoiding reliance on the process-default pipe ACL.

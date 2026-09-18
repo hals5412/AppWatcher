@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-alpha.20
+
+- Performed the final alpha documentation and packaging alignment before beta.
+- Updated architecture documentation to describe the current explicit named-pipe DACL instead of the obsolete default-ACL design.
+- Generalized the remaining product-specific examples in the specification and architecture documents.
+- Documented schema migration and unsupported-newer-schema behavior in the v1 specification and architecture.
+- Fixed the stale Japanese README alpha-version banner and refreshed both README feature summaries.
+- Added `README.ja.md` and `CHANGELOG.md` to published ZIP packages and made package verification require them.
+- Added a reusable pre-beta repository check for changelog/version alignment, stale documentation, RESX validity and CI/package wiring.
+- Wired the pre-beta repository check into both normal CI and tagged release workflows.
 ## 0.1.0-alpha.19
 
 - Added automated ZIP package verification to both normal CI builds and tagged releases.

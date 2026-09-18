@@ -31,6 +31,10 @@ jobs:
           }
           "APPWATCHER_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Pre-beta repository checks
+        shell: pwsh
+        run: .\scripts\prebeta-check.ps1
+
       - name: Restore
         run: dotnet restore .\AppWatcher.sln
 
