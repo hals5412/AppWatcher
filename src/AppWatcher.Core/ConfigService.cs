@@ -5,23 +5,34 @@ namespace AppWatcher.Core;
 public sealed class ConfigService
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
+    private readonly string _dataDirectory;
+
+    public ConfigService(string? dataDirectory = null)
+    {
+        _dataDirectory = string.IsNullOrWhiteSpace(dataDirectory)
+            ? AppPaths.DataDirectory
+            : Path.GetFullPath(dataDirectory);
+    }
+
+    private string ConfigFile => Path.Combine(_dataDirectory, "config.json");
+    private string FallbackLog => Path.Combine(_dataDirectory, "appwatcher-fallback.log");
 
     public async Task<AppWatcherConfiguration> LoadAsync(CancellationToken cancellationToken = default)
     {
-        AppPaths.EnsureDataDirectory();
+        EnsureDataDirectory();
         await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (!File.Exists(AppPaths.ConfigFile))
+            if (!File.Exists(ConfigFile))
             {
                 var empty = new AppWatcherConfiguration();
-                await WriteFileAsync(AppPaths.ConfigFile, empty, cancellationToken).ConfigureAwait(false);
+                await WriteFileAsync(ConfigFile, empty, cancellationToken).ConfigureAwait(false);
                 return empty;
             }
 
             try
             {
-                return await ReadFileAsync(AppPaths.ConfigFile, cancellationToken).ConfigureAwait(false);
+                return await ReadFileAsync(ConfigFile, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception primaryEx)
             {
@@ -57,15 +68,15 @@ public sealed class ConfigService
     public async Task SaveAsync(AppWatcherConfiguration configuration, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        AppPaths.EnsureDataDirectory();
+        EnsureDataDirectory();
 
         await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             RotateBackups();
-            var temp = AppPaths.ConfigFile + ".tmp";
+            var temp = ConfigFile + ".tmp";
             await WriteFileAsync(temp, configuration, cancellationToken).ConfigureAwait(false);
-            File.Move(temp, AppPaths.ConfigFile, true);
+            File.Move(temp, ConfigFile, true);
         }
         finally
         {
@@ -128,6 +139,8 @@ public sealed class ConfigService
         return new ConfigurationValidationResult(messages.Count == 0, messages);
     }
 
+    private void EnsureDataDirectory() => Directory.CreateDirectory(_dataDirectory);
+
     private static async Task<AppWatcherConfiguration> ReadFileAsync(string path, CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(path);
@@ -143,22 +156,23 @@ public sealed class ConfigService
         await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static void RotateBackups()
+    private void RotateBackups()
     {
         if (File.Exists(BackupPath(3))) File.Delete(BackupPath(3));
         if (File.Exists(BackupPath(2))) File.Move(BackupPath(2), BackupPath(3), true);
         if (File.Exists(BackupPath(1))) File.Move(BackupPath(1), BackupPath(2), true);
-        if (File.Exists(AppPaths.ConfigFile)) File.Copy(AppPaths.ConfigFile, BackupPath(1), true);
+        if (File.Exists(ConfigFile)) File.Copy(ConfigFile, BackupPath(1), true);
     }
 
-    private static string BackupPath(int generation) => Path.Combine(AppPaths.DataDirectory, $"config.backup-{generation}.json");
+    private string BackupPath(int generation) =>
+        Path.Combine(_dataDirectory, $"config.backup-{generation}.json");
 
-    private static void AppendFallbackLog(string message)
+    private void AppendFallbackLog(string message)
     {
         try
         {
-            AppPaths.EnsureDataDirectory();
-            File.AppendAllText(AppPaths.FallbackLog, $"{DateTimeOffset.UtcNow:O} {message}{Environment.NewLine}");
+            EnsureDataDirectory();
+            File.AppendAllText(FallbackLog, $"{DateTimeOffset.UtcNow:O} {message}{Environment.NewLine}");
         }
         catch
         {

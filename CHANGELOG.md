@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.14
+
+- Added the first automated test project for AppWatcher.Core.
+- Added restart-loop/backoff tests covering allowed restarts, backoff entry, active backoff, expiry, healthy reset and disabled loop protection.
+- Added configuration tests covering round-trip persistence, three-generation backup rotation, corrupt-primary recovery, first-run creation and validation.
+- Made ConfigService accept an optional data directory so automated tests use isolated temporary files instead of the real AppWatcher profile.
+- Added `dotnet test` to the Windows GitHub Actions build before packaging.
+- Added .NET 10 Microsoft.Testing.Platform runner configuration for local and CI `dotnet test`.
 ## 0.1.0-alpha.13
 
 - Added a running-application picker to the dashboard.
