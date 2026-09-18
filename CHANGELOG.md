@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.3
+
+- Added coordinated full shutdown of Agent and Elevated helper without terminating monitored applications.
+- Added AppWatcher background-component restart from the tray and dashboard.
+- Added `--shutdown` / `--restart` command-line lifecycle controls and PowerShell helper scripts.
+- Added an application icon and embedded it in all Windows executables.
+- Added host-shutdown decision logging and Japanese/English lifecycle UI strings.
+
 ## 0.1.0-alpha.2
 
 - Added Japanese / English localization with automatic Windows display-language selection.

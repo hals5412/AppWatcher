@@ -38,6 +38,8 @@ foreach ($project in $projects) {
 
 Copy-Item (Join-Path $repo "README.md") $dist -Force
 Copy-Item (Join-Path $repo "docs") (Join-Path $dist "docs") -Recurse -Force
+Copy-Item (Join-Path $repo "scripts/stop-appwatcher.ps1") $dist -Force
+Copy-Item (Join-Path $repo "scripts/restart-appwatcher.ps1") $dist -Force
 
 $zip = "$dist.zip"
 Remove-Item $zip -Force -ErrorAction SilentlyContinue

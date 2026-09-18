@@ -46,10 +46,41 @@ internal static class TaskSchedulerInstaller
         Register(service, folder, "Elevated", elevated, baseDir, user, highest: true);
 
         // Start them through Task Scheduler so the exact configured security context is used now as well.
-        try { folder.GetTask("Agent").Run(null); } catch { }
-        try { folder.GetTask("Elevated").Run(null); } catch { }
+        TryRun(folder, "Agent");
+        TryRun(folder, "Elevated");
 
         return Localization.T("StartupInstallSuccess");
+    }
+
+    public static (bool Agent, bool Elevated) TryStartRegisteredHosts()
+    {
+        try
+        {
+            var serviceType = Type.GetTypeFromProgID("Schedule.Service");
+            if (serviceType is null) return (false, false);
+            dynamic service = Activator.CreateInstance(serviceType);
+            if (service is null) return (false, false);
+            service.Connect();
+            dynamic folder = service.GetFolder("\\AppWatcher");
+            return (TryRun(folder, "Agent"), TryRun(folder, "Elevated"));
+        }
+        catch
+        {
+            return (false, false);
+        }
+    }
+
+    private static bool TryRun(dynamic folder, string taskName)
+    {
+        try
+        {
+            folder.GetTask(taskName).Run(null);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static void Register(dynamic service, dynamic folder, string name, string executable, string workingDirectory, string user, bool highest)

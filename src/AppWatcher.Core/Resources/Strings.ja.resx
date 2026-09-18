@@ -704,4 +704,41 @@
   <data name="ZipFilter" xml:space="preserve">
     <value>ZIPアーカイブ (*.zip)|*.zip</value>
   </data>
+  <data name="Event_HostShutdownRequested" xml:space="preserve">
+    <value>AppWatcherホストの終了要求</value>
+  </data>
+  <data name="TrayRestartAppWatcher" xml:space="preserve">
+    <value>AppWatcherを再起動</value>
+  </data>
+  <data name="TrayExitAppWatcher" xml:space="preserve">
+    <value>AppWatcherを完全終了</value>
+  </data>
+  <data name="MenuRestartAppWatcher" xml:space="preserve">
+    <value>AppWatcherを再起動</value>
+  </data>
+  <data name="MenuExitAppWatcher" xml:space="preserve">
+    <value>AppWatcherを完全終了</value>
+  </data>
+  <data name="RestartAppWatcherTitle" xml:space="preserve">
+    <value>AppWatcherを再起動</value>
+  </data>
+  <data name="RestartAppWatcherPrompt" xml:space="preserve">
+    <value>AppWatcherの監視コンポーネントを再起動しますか？
+
+監視対象アプリは終了せず、そのまま動作を続けます。</value>
+  </data>
+  <data name="RestartAppWatcherFailed" xml:space="preserve">
+    <value>AppWatcherの監視コンポーネントをすべて再起動できませんでした。イベントログを確認するか、Agent／管理者権限Helperを手動で起動してください。</value>
+  </data>
+  <data name="ExitAppWatcherTitle" xml:space="preserve">
+    <value>AppWatcherを完全終了</value>
+  </data>
+  <data name="ExitAppWatcherPrompt" xml:space="preserve">
+    <value>AppWatcher Agent、管理者権限Helper、このダッシュボードを終了しますか？
+
+監視対象アプリは終了せず、そのまま動作を続けます。</value>
+  </data>
+  <data name="ExitAppWatcherFailed" xml:space="preserve">
+    <value>一部のAppWatcherバックグラウンドコンポーネントが制限時間内に終了しませんでした。</value>
+  </data>
 </root>

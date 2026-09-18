@@ -704,4 +704,41 @@ Both run only in your logged-on desktop session, avoiding Session 0 so child GUI
   <data name="ZipFilter" xml:space="preserve">
     <value>ZIP archive (*.zip)|*.zip</value>
   </data>
+  <data name="Event_HostShutdownRequested" xml:space="preserve">
+    <value>AppWatcher host shutdown requested</value>
+  </data>
+  <data name="TrayRestartAppWatcher" xml:space="preserve">
+    <value>Restart AppWatcher</value>
+  </data>
+  <data name="TrayExitAppWatcher" xml:space="preserve">
+    <value>Exit AppWatcher completely</value>
+  </data>
+  <data name="MenuRestartAppWatcher" xml:space="preserve">
+    <value>Restart AppWatcher</value>
+  </data>
+  <data name="MenuExitAppWatcher" xml:space="preserve">
+    <value>Exit AppWatcher completely</value>
+  </data>
+  <data name="RestartAppWatcherTitle" xml:space="preserve">
+    <value>Restart AppWatcher</value>
+  </data>
+  <data name="RestartAppWatcherPrompt" xml:space="preserve">
+    <value>Restart the AppWatcher monitoring components?
+
+Monitored applications will be left running.</value>
+  </data>
+  <data name="RestartAppWatcherFailed" xml:space="preserve">
+    <value>AppWatcher could not restart all monitoring components. Check the event log or start the Agent / Elevated helper manually.</value>
+  </data>
+  <data name="ExitAppWatcherTitle" xml:space="preserve">
+    <value>Exit AppWatcher completely</value>
+  </data>
+  <data name="ExitAppWatcherPrompt" xml:space="preserve">
+    <value>Exit AppWatcher Agent, Elevated helper, and this dashboard?
+
+Monitored applications will be left running.</value>
+  </data>
+  <data name="ExitAppWatcherFailed" xml:space="preserve">
+    <value>One or more AppWatcher background components did not stop within the timeout.</value>
+  </data>
 </root>

@@ -17,6 +17,7 @@ public sealed class SupervisorEngine : IAsyncDisposable
     private readonly DateTimeOffset _startedUtc = DateTimeOffset.UtcNow;
 
     private volatile bool _shuttingDown;
+    private int _exitRequested;
     private volatile bool _maintenanceIndefinite;
     private DateTimeOffset? _maintenanceUntilUtc;
     private CancellationTokenSource? _maintenanceTimerCts;
@@ -32,6 +33,7 @@ public sealed class SupervisorEngine : IAsyncDisposable
 
     public PrivilegeLevel HostPrivilege => _hostPrivilege;
     public bool IsShuttingDown => _shuttingDown;
+    public bool ExitRequested => Volatile.Read(ref _exitRequested) != 0;
     public bool IsMaintenanceActive => _maintenanceIndefinite || (_maintenanceUntilUtc is not null && _maintenanceUntilUtc > DateTimeOffset.UtcNow);
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -213,6 +215,20 @@ public sealed class SupervisorEngine : IAsyncDisposable
         {
             privilege = _hostPrivilege.ToString()
         }));
+    }
+
+    public async Task RequestHostShutdownAsync(CancellationToken cancellationToken = default)
+    {
+        if (Interlocked.Exchange(ref _exitRequested, 1) != 0) return;
+
+        // Suppress all automatic restart decisions before the host starts tearing down.
+        // Disposing supervisors only detaches from target processes; it never terminates them.
+        _shuttingDown = true;
+        await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "HostShutdownRequested", "UserRequest", new
+        {
+            privilege = _hostPrivilege.ToString(),
+            processId = Environment.ProcessId
+        }), cancellationToken).ConfigureAwait(false);
     }
 
     private ApplicationSupervisor GetSupervisor(Guid id)

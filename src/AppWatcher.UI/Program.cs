@@ -20,6 +20,18 @@ internal static class Program
             return;
         }
 
+        if (args.Any(a => string.Equals(a, "--shutdown", StringComparison.OrdinalIgnoreCase)))
+        {
+            Environment.ExitCode = HostLifecycle.ShutdownAllAsync(closeDashboard: true).GetAwaiter().GetResult() ? 0 : 1;
+            return;
+        }
+
+        if (args.Any(a => string.Equals(a, "--restart", StringComparison.OrdinalIgnoreCase)))
+        {
+            Environment.ExitCode = HostLifecycle.RestartHostsAsync().GetAwaiter().GetResult() ? 0 : 1;
+            return;
+        }
+
         using var guard = new SingleInstanceGuard("UI");
         if (!guard.IsOwner) return;
         Application.Run(new MainForm());

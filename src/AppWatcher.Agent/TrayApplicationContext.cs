@@ -7,12 +7,16 @@ namespace AppWatcher.Agent;
 internal sealed class TrayApplicationContext : ApplicationContext
 {
     private readonly SupervisorEngine _engine;
+    private readonly SupervisorClient _adminClient = new(PrivilegeLevel.Administrator);
     private readonly NotifyIcon _notifyIcon;
+    private readonly Icon _appIcon;
     private readonly System.Windows.Forms.Timer _statusTimer;
+    private readonly System.Windows.Forms.Timer _exitTimer;
 
     public TrayApplicationContext(SupervisorEngine engine)
     {
         _engine = engine;
+        _appIcon = (Icon)(Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application).Clone();
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(Localization.T("TrayOpenDashboard"), null, (_, _) => OpenDashboard());
@@ -26,11 +30,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(pause);
         menu.Items.Add(Localization.T("TrayResumeAllMonitoring"), null, async (_, _) => await ResumeMaintenanceAsync());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(Localization.T("TrayExitAgent"), null, (_, _) => ExitAgent());
+        menu.Items.Add(Localization.T("TrayRestartAppWatcher"), null, (_, _) => RestartAppWatcher());
+        menu.Items.Add(Localization.T("TrayExitAppWatcher"), null, async (_, _) => await ExitAllAsync());
 
         _notifyIcon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = _appIcon,
             Text = Localization.T("TrayMonitoring"),
             ContextMenuStrip = menu,
             Visible = true
@@ -40,6 +45,15 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _statusTimer = new System.Windows.Forms.Timer { Interval = 5000 };
         _statusTimer.Tick += (_, _) => UpdateStatus();
         _statusTimer.Start();
+
+        // IPC shutdown requests originate on a pipe worker thread. Polling this flag from
+        // the WinForms message loop keeps ApplicationContext shutdown on the correct thread.
+        _exitTimer = new System.Windows.Forms.Timer { Interval = 200 };
+        _exitTimer.Tick += (_, _) =>
+        {
+            if (_engine.ExitRequested) ExitThread();
+        };
+        _exitTimer.Start();
 
         SystemEvents.SessionEnding += OnSessionEnding;
         UpdateStatus();
@@ -94,7 +108,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
         else
         {
-            _notifyIcon.Icon = SystemIcons.Application;
+            _notifyIcon.Icon = _appIcon;
             _notifyIcon.Text = Truncate(Localization.F("TrayMonitored", snapshot.Applications.Count));
         }
     }
@@ -103,14 +117,58 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
     private static void OpenDashboard()
     {
+        LaunchUiCommand(null, showErrors: true);
+    }
+
+    private void RestartAppWatcher()
+    {
+        var result = MessageBox.Show(
+            Localization.T("RestartAppWatcherPrompt"),
+            Localization.T("RestartAppWatcherTitle"),
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question,
+            MessageBoxDefaultButton.Button2);
+
+        if (result != DialogResult.Yes) return;
+        LaunchUiCommand("--restart", showErrors: true);
+    }
+
+    private async Task ExitAllAsync()
+    {
+        var result = MessageBox.Show(
+            Localization.T("ExitAppWatcherPrompt"),
+            Localization.T("ExitAppWatcherTitle"),
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+
+        if (result != DialogResult.Yes) return;
+
+        LifecycleSignals.RequestUiExit();
+
+        // Ask the elevated helper to exit itself. This avoids trying to terminate a
+        // high-integrity process from the normal agent and therefore needs no new UAC prompt.
+        await _adminClient.SendAsync(
+            new SupervisorRequest(SupervisorCommandType.ShutdownHost),
+            TimeSpan.FromSeconds(2));
+
+        await _engine.RequestHostShutdownAsync();
+        ExitThread();
+    }
+
+    private static void LaunchUiCommand(string? argument, bool showErrors)
+    {
         var uiPath = Path.Combine(AppContext.BaseDirectory, "AppWatcher.UI.exe");
         if (!File.Exists(uiPath))
         {
-            MessageBox.Show(
-                Localization.F("DashboardNotFound", uiPath),
-                "AppWatcher",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Warning);
+            if (showErrors)
+            {
+                MessageBox.Show(
+                    Localization.F("DashboardNotFound", uiPath),
+                    "AppWatcher",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
             return;
         }
 
@@ -119,13 +177,17 @@ internal sealed class TrayApplicationContext : ApplicationContext
             Process.Start(new ProcessStartInfo
             {
                 FileName = uiPath,
+                Arguments = argument ?? string.Empty,
                 UseShellExecute = true,
                 WorkingDirectory = AppContext.BaseDirectory
             });
         }
         catch (Exception ex)
         {
-            MessageBox.Show(Localization.F("CouldNotOpenDashboard", ex.Message), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (showErrors)
+            {
+                MessageBox.Show(Localization.F("CouldNotOpenDashboard", ex.Message), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 
@@ -134,27 +196,16 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _engine.BeginSystemShutdown();
     }
 
-    private void ExitAgent()
-    {
-        var result = MessageBox.Show(
-            Localization.T("ExitAgentPrompt"),
-            Localization.T("ExitAgentTitle"),
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Warning,
-            MessageBoxDefaultButton.Button2);
-
-        if (result != DialogResult.Yes) return;
-        _engine.BeginSystemShutdown();
-        ExitThread();
-    }
-
     protected override void ExitThreadCore()
     {
         SystemEvents.SessionEnding -= OnSessionEnding;
         _statusTimer.Stop();
         _statusTimer.Dispose();
+        _exitTimer.Stop();
+        _exitTimer.Dispose();
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
+        _appIcon.Dispose();
         base.ExitThreadCore();
     }
 }

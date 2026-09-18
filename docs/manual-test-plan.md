@@ -80,3 +80,27 @@ Use a disposable test GUI that can intentionally block its UI thread.
 2. Cause a monitored target to exit.
 3. Confirm supervision/restart still occurs.
 4. Confirm fallback diagnostic logging is attempted.
+
+
+## Complete shutdown / binary replacement
+
+1. Start Agent and Elevated helper and monitor at least one normal and one administrator target.
+2. Choose **Exit AppWatcher completely**.
+3. Verify `AppWatcher.Agent.exe`, `AppWatcher.Elevated.exe`, and the dashboard exit within 5 seconds.
+4. Verify monitored target processes remain running with the same PIDs.
+5. Replace AppWatcher binaries and start AppWatcher again; verify existing targets are attached when `AttachExisting` is enabled.
+6. Repeat with `AppWatcher.UI.exe --shutdown` and `stop-appwatcher.ps1`.
+
+## AppWatcher restart
+
+1. Install the AppWatcher startup tasks.
+2. Choose **Restart AppWatcher** from the tray.
+3. Verify Agent and Elevated PIDs change while monitored target PIDs remain unchanged.
+4. Verify the Elevated helper returns without a new UAC prompt when the registered task exists.
+5. Verify event history contains `HostShutdownRequested` / `HostStopped` for both hosts.
+
+## Application icon
+
+1. Verify UI, Agent and Elevated executables show the AppWatcher icon in Explorer properties.
+2. Verify the dashboard taskbar icon and healthy tray icon use the AppWatcher icon.
+3. Inspect 16, 32, 48 and 256 px presentations for clipping or illegibility.

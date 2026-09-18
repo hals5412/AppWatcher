@@ -165,3 +165,17 @@ On Windows session-ending notification, AppWatcher marks shutdown in progress an
 - Language changes require the Agent/dashboard to be restarted before every component uses the new language.
 
 See [`docs/specification.md`](docs/specification.md), [`docs/architecture.md`](docs/architecture.md), and [`docs/manual-test-plan.md`](docs/manual-test-plan.md).
+
+
+## Stopping or restarting AppWatcher
+
+Closing the dashboard does **not** stop monitoring. Use **Exit AppWatcher completely** from the tray or dashboard when replacing binaries. AppWatcher first asks any open dashboard to close, suppresses automatic restart decisions, asks the elevated helper to terminate itself over IPC, then exits the normal Agent. Monitored applications are deliberately left running.
+
+The same operation is available for scripted development workflows:
+
+```powershell
+AppWatcher.UI.exe --shutdown
+AppWatcher.UI.exe --restart
+```
+
+Published packages also include `stop-appwatcher.ps1` and `restart-appwatcher.ps1`. `--restart` prefers the registered Task Scheduler tasks so the Elevated helper can return without a new UAC prompt. If those tasks are not installed, AppWatcher falls back to direct launch and Windows may show UAC for the Elevated helper.

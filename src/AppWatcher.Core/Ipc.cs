@@ -18,7 +18,8 @@ public enum SupervisorCommandType
     PauseApplication,
     ResumeApplication,
     StartMaintenance,
-    ResumeMaintenance
+    ResumeMaintenance,
+    ShutdownHost
 }
 
 public sealed record SupervisorRequest(
@@ -158,6 +159,9 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
                     break;
                 case SupervisorCommandType.ResumeMaintenance:
                     await _engine.ResumeMaintenanceAsync(cancellationToken).ConfigureAwait(false);
+                    break;
+                case SupervisorCommandType.ShutdownHost:
+                    await _engine.RequestHostShutdownAsync(cancellationToken).ConfigureAwait(false);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

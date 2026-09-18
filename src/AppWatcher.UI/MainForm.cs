@@ -13,6 +13,8 @@ internal sealed class MainForm : Form
     private readonly Label _summary = new();
     private readonly Label _hostStatus = new();
     private readonly System.Windows.Forms.Timer _refreshTimer = new();
+    private readonly System.Windows.Forms.Timer _lifecycleTimer = new();
+    private readonly EventWaitHandle _uiExitEvent = LifecycleSignals.CreateUiExitEvent();
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
     private HostSnapshot? _normalHost;
@@ -49,6 +51,12 @@ internal sealed class MainForm : Form
 
         _refreshTimer.Interval = 2000;
         _refreshTimer.Tick += async (_, _) => await RefreshDashboardAsync();
+        _lifecycleTimer.Interval = 200;
+        _lifecycleTimer.Tick += (_, _) =>
+        {
+            if (_uiExitEvent.WaitOne(0)) Close();
+        };
+        _lifecycleTimer.Start();
         Shown += async (_, _) =>
         {
             await EnsureNormalAgentStartedAsync();
@@ -59,6 +67,9 @@ internal sealed class MainForm : Form
         {
             _refreshTimer.Stop();
             _refreshTimer.Dispose();
+            _lifecycleTimer.Stop();
+            _lifecycleTimer.Dispose();
+            _uiExitEvent.Dispose();
             _refreshGate.Dispose();
         };
     }
@@ -68,6 +79,9 @@ internal sealed class MainForm : Form
         var menu = new MenuStrip();
         var file = new ToolStripMenuItem(Localization.T("MenuFile"));
         file.DropDownItems.Add(Localization.T("OpenDataFolder"), null, (_, _) => OpenDataFolder());
+        file.DropDownItems.Add(new ToolStripSeparator());
+        file.DropDownItems.Add(Localization.T("MenuRestartAppWatcher"), null, async (_, _) => await RestartAppWatcherAsync());
+        file.DropDownItems.Add(Localization.T("MenuExitAppWatcher"), null, async (_, _) => await ExitAppWatcherAsync());
         file.DropDownItems.Add(new ToolStripSeparator());
         file.DropDownItems.Add(Localization.T("CloseDashboard"), null, (_, _) => Close());
 
@@ -419,6 +433,55 @@ internal sealed class MainForm : Form
         using var settings = new SettingsForm();
         settings.ShowDialog(this);
         await RefreshDashboardAsync();
+    }
+
+
+    private async Task RestartAppWatcherAsync()
+    {
+        if (MessageBox.Show(this,
+                Localization.T("RestartAppWatcherPrompt"),
+                Localization.T("RestartAppWatcherTitle"),
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+
+        _refreshTimer.Stop();
+        var success = await HostLifecycle.RestartHostsAsync();
+        if (!success)
+        {
+            MessageBox.Show(this,
+                Localization.T("RestartAppWatcherFailed"),
+                Localization.T("RestartAppWatcherTitle"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+        _refreshTimer.Start();
+        await RefreshDashboardAsync();
+    }
+
+    private async Task ExitAppWatcherAsync()
+    {
+        if (MessageBox.Show(this,
+                Localization.T("ExitAppWatcherPrompt"),
+                Localization.T("ExitAppWatcherTitle"),
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+
+        _refreshTimer.Stop();
+        var success = await HostLifecycle.ShutdownAllAsync();
+        if (!success)
+        {
+            MessageBox.Show(this,
+                Localization.T("ExitAppWatcherFailed"),
+                Localization.T("ExitAppWatcherTitle"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            _refreshTimer.Start();
+            return;
+        }
+
+        Close();
     }
 
     private async Task CreateDiagnosticPackageAsync()
