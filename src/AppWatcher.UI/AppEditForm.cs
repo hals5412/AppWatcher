@@ -29,6 +29,7 @@ internal sealed class AppEditForm : Form
     private readonly CheckBox _forceKill = new() { Text = Localization.T("ForceTerminateAfterTimeout"), AutoSize = true };
     private readonly ComboBox _childPolicy = new();
     private readonly ComboBox _logLevel = new();
+    private readonly ToolTip _pathToolTip = new();
 
     private readonly Guid _id;
     public ApplicationDefinition Result { get; private set; }
@@ -43,16 +44,23 @@ internal sealed class AppEditForm : Form
             : Localization.F("TitleEditApplication", definition.Name);
         StartPosition = FormStartPosition.CenterParent;
         AutoScaleMode = AutoScaleMode.Dpi;
-        Width = 860;
+        Width = 980;
         Height = 720;
-        MinimumSize = new Size(760, 620);
+        MinimumSize = new Size(860, 620);
 
         BindEnum(_privilege, Enum.GetValues<PrivilegeLevel>(), Localization.PrivilegeText);
         BindEnum(_restartPolicy, Enum.GetValues<RestartPolicy>(), Localization.RestartPolicyText);
         BindEnum(_childPolicy, new[] { ChildProcessPolicy.Unmanaged }, Localization.ChildProcessPolicyText);
         BindEnum(_logLevel, Enum.GetValues<AppLogLevel>(), Localization.LogLevelText);
 
-        var tabs = new TabControl { Dock = DockStyle.Fill };
+        _exe.TextChanged += (_, _) => _pathToolTip.SetToolTip(_exe, _exe.Text);
+        _workingDir.TextChanged += (_, _) => _pathToolTip.SetToolTip(_workingDir, _workingDir.Text);
+
+        var tabs = new TabControl
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Point(14, 6)
+        };
         tabs.TabPages.Add(BuildGeneralTab());
         tabs.TabPages.Add(BuildMonitoringTab());
         tabs.TabPages.Add(BuildAdvancedTab());
@@ -61,15 +69,36 @@ internal sealed class AppEditForm : Form
         var buttons = new FlowLayoutPanel
         {
             Dock = DockStyle.Bottom,
-            Height = 46,
+            Height = 54,
             FlowDirection = FlowDirection.RightToLeft,
-            Padding = new Padding(6)
+            Padding = new Padding(8),
+            WrapContents = false
         };
-        var save = new Button { Text = Localization.T("ButtonSave"), AutoSize = true };
+
+        var save = new Button
+        {
+            Text = Localization.T("ButtonSave"),
+            AutoSize = true,
+            MinimumSize = new Size(80, 32)
+        };
         save.Click += (_, _) => SaveAndClose();
-        var cancel = new Button { Text = Localization.T("ButtonCancel"), AutoSize = true, DialogResult = DialogResult.Cancel };
-        var validate = new Button { Text = Localization.T("ButtonValidate"), AutoSize = true };
+
+        var cancel = new Button
+        {
+            Text = Localization.T("ButtonCancel"),
+            AutoSize = true,
+            MinimumSize = new Size(80, 32),
+            DialogResult = DialogResult.Cancel
+        };
+
+        var validate = new Button
+        {
+            Text = Localization.T("ButtonValidate"),
+            AutoSize = true,
+            MinimumSize = new Size(96, 32)
+        };
         validate.Click += (_, _) => ValidateOnly();
+
         buttons.Controls.Add(save);
         buttons.Controls.Add(cancel);
         buttons.Controls.Add(validate);
@@ -82,51 +111,35 @@ internal sealed class AppEditForm : Form
 
     private TabPage BuildGeneralTab()
     {
-        var page = new TabPage(Localization.T("TabGeneral"));
+        var page = new TabPage(Localization.T("TabGeneral"))
+        {
+            Padding = new Padding(6)
+        };
+
         var table = CreateTable();
         page.Controls.Add(table);
 
         AddRow(table, Localization.T("FieldName"), _name);
-
-        var exePanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Height = 30 };
-        exePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        exePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 36));
-        _exe.Dock = DockStyle.Fill;
-        var browseExe = new Button { Text = "...", Dock = DockStyle.Fill };
-        browseExe.Click += (_, _) => BrowseExecutable();
-        exePanel.Controls.Add(_exe, 0, 0);
-        exePanel.Controls.Add(browseExe, 1, 0);
-        AddRow(table, Localization.T("FieldExecutable"), exePanel);
-
+        AddRow(table, Localization.T("FieldExecutable"), CreatePathPicker(_exe, BrowseExecutable));
         AddRow(table, Localization.T("FieldArguments"), _args);
-
-        var wdPanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Height = 30 };
-        wdPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        wdPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 36));
-        _workingDir.Dock = DockStyle.Fill;
-        var browseWd = new Button { Text = "...", Dock = DockStyle.Fill };
-        browseWd.Click += (_, _) => BrowseWorkingDirectory();
-        wdPanel.Controls.Add(_workingDir, 0, 0);
-        wdPanel.Controls.Add(browseWd, 1, 0);
-        AddRow(table, Localization.T("FieldWorkingDirectory"), wdPanel);
-
+        AddRow(table, Localization.T("FieldWorkingDirectory"), CreatePathPicker(_workingDir, BrowseWorkingDirectory));
         AddRow(table, Localization.T("FieldPrivilege"), _privilege);
+
         AddFullRow(table, _monitoringEnabled);
         AddFullRow(table, _startWithWatcher);
         AddFullRow(table, _attachExisting);
-        AddFullRow(table, new Label
-        {
-            Text = Localization.T("InteractiveLaunchInfo"),
-            AutoSize = true,
-            MaximumSize = new Size(780, 0),
-            ForeColor = Color.DimGray
-        });
+        AddFullRow(table, InfoLabel(Localization.T("InteractiveLaunchInfo")));
+
         return page;
     }
 
     private TabPage BuildMonitoringTab()
     {
-        var page = new TabPage(Localization.T("TabMonitoring"));
+        var page = new TabPage(Localization.T("TabMonitoring"))
+        {
+            Padding = new Padding(6)
+        };
+
         var table = CreateTable();
         page.Controls.Add(table);
 
@@ -141,12 +154,17 @@ internal sealed class AppEditForm : Form
         AddRow(table, Localization.T("FieldWithinMinutes"), _restartWindow);
         AddRow(table, Localization.T("FieldBackoffMinutes"), _backoff);
         AddRow(table, Localization.T("FieldHealthyResetMinutes"), _healthyReset);
+
         return page;
     }
 
     private TabPage BuildAdvancedTab()
     {
-        var page = new TabPage(Localization.T("TabAdvanced"));
+        var page = new TabPage(Localization.T("TabAdvanced"))
+        {
+            Padding = new Padding(6)
+        };
+
         var table = CreateTable();
         page.Controls.Add(table);
 
@@ -154,26 +172,60 @@ internal sealed class AppEditForm : Form
         AddFullRow(table, _forceKill);
         AddRow(table, Localization.T("FieldChildProcessPolicy"), _childPolicy);
         AddRow(table, Localization.T("FieldLogLevel"), _logLevel);
-        AddFullRow(table, new Label
-        {
-            Text = Localization.T("ChildProcessPolicyInfo"),
-            AutoSize = true,
-            MaximumSize = new Size(780, 0),
-            ForeColor = Color.DimGray
-        });
+        AddFullRow(table, InfoLabel(Localization.T("ChildProcessPolicyInfo")));
+
         return page;
     }
+
+    private static TableLayoutPanel CreatePathPicker(TextBox textBox, Action browseAction)
+    {
+        var panel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            Height = 34,
+            Margin = Padding.Empty
+        };
+        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 46));
+        panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        textBox.Dock = DockStyle.Fill;
+        textBox.Margin = new Padding(0, 3, 6, 3);
+
+        var browse = new Button
+        {
+            Text = "...",
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 2, 0, 2)
+        };
+        browse.Click += (_, _) => browseAction();
+
+        panel.Controls.Add(textBox, 0, 0);
+        panel.Controls.Add(browse, 1, 0);
+
+        return panel;
+    }
+
+    private static Label InfoLabel(string text) => new()
+    {
+        Text = text,
+        AutoSize = true,
+        ForeColor = Color.DimGray,
+        Margin = new Padding(3, 12, 3, 6)
+    };
 
     private static TableLayoutPanel CreateTable() => new()
     {
         Dock = DockStyle.Fill,
         AutoScroll = true,
         ColumnCount = 2,
-        Padding = new Padding(12),
+        Padding = new Padding(16, 14, 16, 14),
         AutoSize = false,
         ColumnStyles =
         {
-            new ColumnStyle(SizeType.Absolute, 245),
+            new ColumnStyle(SizeType.Absolute, 190),
             new ColumnStyle(SizeType.Percent, 100)
         }
     };
@@ -182,22 +234,26 @@ internal sealed class AppEditForm : Form
     {
         var row = table.RowCount++;
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
         var caption = new Label
         {
             Text = label,
             AutoSize = true,
             Anchor = AnchorStyles.Left,
-            Margin = new Padding(3, 8, 3, 8)
+            Margin = new Padding(3, 8, 12, 8)
         };
-        control.Margin = new Padding(3, 5, 3, 5);
-        if (control is TextBox or ComboBox)
-        {
-            control.Dock = DockStyle.Fill;
-        }
-        else
+
+        control.Margin = new Padding(3, 4, 3, 4);
+
+        if (control is NumericUpDown)
         {
             control.Anchor = AnchorStyles.Left;
         }
+        else
+        {
+            control.Dock = DockStyle.Fill;
+        }
+
         table.Controls.Add(caption, 0, row);
         table.Controls.Add(control, 1, row);
     }
@@ -206,14 +262,25 @@ internal sealed class AppEditForm : Form
     {
         var row = table.RowCount++;
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
         control.Margin = new Padding(3, 8, 3, 8);
-        if (control is CheckBox checkBox) checkBox.AutoSize = true;
-        if (control is Label label)
+
+        if (control is CheckBox checkBox)
+        {
+            checkBox.AutoSize = true;
+            checkBox.Anchor = AnchorStyles.Left;
+        }
+        else if (control is Label label)
         {
             label.AutoSize = true;
-            label.MaximumSize = new Size(780, 0);
+            label.MaximumSize = new Size(0, 0);
+            label.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         }
-        control.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        else
+        {
+            control.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        }
+
         table.Controls.Add(control, 0, row);
         table.SetColumnSpan(control, 2);
     }
@@ -222,7 +289,7 @@ internal sealed class AppEditForm : Form
     {
         Minimum = min,
         Maximum = max,
-        Width = 120
+        Width = 140
     };
 
     private void LoadFrom(ApplicationDefinition d)
@@ -303,6 +370,7 @@ internal sealed class AppEditForm : Form
                 return;
             }
         }
+
         if (box.Items.Count > 0) box.SelectedIndex = 0;
     }
 
@@ -312,7 +380,8 @@ internal sealed class AppEditForm : Form
     private void ValidateOnly()
     {
         var result = new ConfigService().Validate(BuildResult());
-        MessageBox.Show(this,
+        MessageBox.Show(
+            this,
             result.Success ? Localization.T("ConfigurationValid") : string.Join(Environment.NewLine, result.Messages),
             Localization.T("ConfigurationValidation"),
             MessageBoxButtons.OK,
@@ -325,7 +394,12 @@ internal sealed class AppEditForm : Form
         var validation = new ConfigService().Validate(candidate);
         if (!validation.Success)
         {
-            MessageBox.Show(this, string.Join(Environment.NewLine, validation.Messages), Localization.T("CannotSave"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(
+                this,
+                string.Join(Environment.NewLine, validation.Messages),
+                Localization.T("CannotSave"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
             return;
         }
 
@@ -342,12 +416,15 @@ internal sealed class AppEditForm : Form
             CheckFileExists = true,
             Title = Localization.T("SelectApplication")
         };
+
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
         _exe.Text = dialog.FileName;
         if (string.IsNullOrWhiteSpace(_name.Text) || _name.Text == "New application")
         {
             _name.Text = Path.GetFileNameWithoutExtension(dialog.FileName);
         }
+
         if (string.IsNullOrWhiteSpace(_workingDir.Text))
         {
             _workingDir.Text = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
@@ -361,6 +438,7 @@ internal sealed class AppEditForm : Form
             Description = Localization.T("SelectWorkingDirectory"),
             UseDescriptionForTitle = true
         };
+
         if (dialog.ShowDialog(this) == DialogResult.OK)
         {
             _workingDir.Text = dialog.SelectedPath;

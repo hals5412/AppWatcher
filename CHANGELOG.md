@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.8
+
+- Replaced the sparse Settings tabs with one compact settings page.
+- Expanded executable and working-directory fields in the application editor.
+- Reduced wasted horizontal space by narrowing the application-editor label column.
+- Improved button sizing, padding and DPI-friendly spacing across both dialogs.
+- Added full-path tooltips for executable and working-directory fields.
 ## 0.1.0-alpha.7
 
 - Increased the default UI font and dashboard control/row sizing for better readability.
