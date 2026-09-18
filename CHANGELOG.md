@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.17
+
+- Added application-scoped event-log windows from the dashboard row context menu.
+- Selected-application logs now query SQLite by stable application ID instead of filtering only by display name.
+- Scoped log windows continue to show historical events recorded before an application was renamed.
+- The global Logs button remains unchanged and continues to show/filter events across all applications and hosts.
+- Scoped log windows show the selected application in the title and lock the application field to make the active scope clear.
 ## 0.1.0-alpha.16
 
 - Added an automatic startup self-check that surfaces problems only when action is needed.

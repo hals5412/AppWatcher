@@ -924,4 +924,7 @@ Use Tools &gt; Install / repair startup tasks to repair missing, disabled, or st
   <data name="StartupSelfCheckElevatedOfflineRequired" xml:space="preserve">
     <value>The administrator helper is offline while administrator applications require it.</value>
   </data>
+  <data name="EventLogTitleForApplication" xml:space="preserve">
+    <value>Event log - {0}</value>
+  </data>
 </root>

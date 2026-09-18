@@ -374,9 +374,22 @@ internal sealed class MainForm : Form
         _rowContextMenu.Items.Add(
             Localization.T("ButtonLogs"),
             null,
-            (_, _) => new EventLogForm().Show(this));
+            (_, _) => OpenSelectedLogs());
 
         UpdateCommandAvailability();
+    }
+
+    private void OpenSelectedLogs()
+    {
+        var selected = SelectedSnapshot();
+        if (selected is null)
+        {
+            return;
+        }
+
+        new EventLogForm(
+            selected.Id,
+            selected.Name).Show(this);
     }
 
     private static void ConfigureContextItem(

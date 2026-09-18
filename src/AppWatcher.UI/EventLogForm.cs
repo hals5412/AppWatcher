@@ -11,11 +11,22 @@ internal sealed class EventLogForm : Form
     private readonly TextBox _appFilter = new();
     private readonly ComboBox _level = new();
     private readonly ComboBox _period = new();
+    private readonly Guid? _applicationId;
+    private readonly string? _applicationName;
     private IReadOnlyList<EventRecord> _records = [];
 
-    public EventLogForm()
+    public EventLogForm(
+        Guid? applicationId = null,
+        string? applicationName = null)
     {
-        Text = Localization.T("EventLogTitle");
+        _applicationId = applicationId;
+        _applicationName = applicationName;
+
+        Text = _applicationId is null
+            ? Localization.T("EventLogTitle")
+            : Localization.F(
+                "EventLogTitleForApplication",
+                _applicationName ?? _applicationId.Value.ToString("D"));
         StartPosition = FormStartPosition.CenterParent;
         Width = 1050;
         Height = 650;
@@ -29,7 +40,14 @@ internal sealed class EventLogForm : Form
             WrapContents = false
         };
         filter.Controls.Add(new Label { Text = Localization.T("LabelApplication"), AutoSize = true, Margin = new Padding(3, 7, 3, 0) });
-        _appFilter.Width = 180;
+        _appFilter.Width = 220;
+        if (_applicationId is not null)
+        {
+            _appFilter.Text = _applicationName ?? _applicationId.Value.ToString("D");
+            _appFilter.ReadOnly = true;
+            _appFilter.BackColor = SystemColors.Control;
+            _appFilter.TabStop = false;
+        }
         filter.Controls.Add(_appFilter);
         filter.Controls.Add(new Label { Text = Localization.T("LabelLevel"), AutoSize = true, Margin = new Padding(12, 7, 3, 0) });
         _level.DropDownStyle = ComboBoxStyle.DropDownList;
@@ -99,7 +117,11 @@ internal sealed class EventLogForm : Form
 
         try
         {
-            _records = await _store.QueryAsync(new EventQuery(MinimumLevel: minimum, SinceUtc: since, Limit: 2000));
+            _records = await _store.QueryAsync(new EventQuery(
+                ApplicationId: _applicationId,
+                MinimumLevel: minimum,
+                SinceUtc: since,
+                Limit: 2000));
             ApplyClientFilter();
         }
         catch (Exception ex)
@@ -110,10 +132,19 @@ internal sealed class EventLogForm : Form
 
     private void ApplyClientFilter()
     {
-        var text = _appFilter.Text.Trim();
+        // Scoped log windows query by stable application ID. Do not apply the
+        // current display name as a second filter: renamed applications should
+        // still show events recorded under their previous names.
+        var text = _applicationId is null
+            ? _appFilter.Text.Trim()
+            : string.Empty;
+
         var filtered = string.IsNullOrWhiteSpace(text)
             ? _records
-            : _records.Where(r => (r.ApplicationName ?? string.Empty).Contains(text, StringComparison.CurrentCultureIgnoreCase)).ToArray();
+            : _records.Where(r =>
+                (r.ApplicationName ?? string.Empty).Contains(
+                    text,
+                    StringComparison.CurrentCultureIgnoreCase)).ToArray();
 
         _grid.Rows.Clear();
         foreach (var record in filtered)

@@ -924,4 +924,7 @@ AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監�
   <data name="StartupSelfCheckElevatedOfflineRequired" xml:space="preserve">
     <value>管理者権限の監視対象があるのに管理者Helperがオフラインです。</value>
   </data>
+  <data name="EventLogTitleForApplication" xml:space="preserve">
+    <value>イベントログ - {0}</value>
+  </data>
 </root>
