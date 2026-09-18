@@ -1,14 +1,16 @@
 [CmdletBinding()]
 param(
     [switch]$SelfContained,
-    [string]$Runtime = "win-x64"
+    [string]$Runtime = "win-x64",
+    [string]$PackageSuffix = ""
 )
 
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 $outRoot = Join-Path $repo "artifacts"
-$dist = Join-Path $outRoot "AppWatcher-$Runtime"
-$temp = Join-Path $outRoot "publish-temp"
+$packageName = "AppWatcher-$Runtime$PackageSuffix"
+$dist = Join-Path $outRoot $packageName
+$temp = Join-Path $outRoot "publish-temp-$packageName"
 
 Remove-Item $dist -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $temp -Recurse -Force -ErrorAction SilentlyContinue

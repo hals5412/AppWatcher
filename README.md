@@ -4,7 +4,7 @@
 
 AppWatcher is a lightweight Windows supervisor for long-running desktop applications that should normally stay running.
 
-> Status: **v0.1.0-alpha.7 / development build**. Core monitoring, Japanese/English UI, coordinated shutdown/restart, duplicate-registration prevention, and normal/elevated host IPC are implemented. Continue runtime testing before replacing an existing watchdog in production.
+> Status: **development alpha**. Core monitoring, Japanese/English UI, coordinated shutdown/restart, duplicate-registration prevention, and normal/elevated host IPC are implemented. Continue runtime testing before replacing an existing watchdog in production.
 
 ## Design goals
 

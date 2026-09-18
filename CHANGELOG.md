@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.18
+
+- Added a tag-driven GitHub Release workflow for `v*` tags.
+- Release tags are validated against `Directory.Build.props` before packaging.
+- Releases build and test the tagged source before creating downloadable assets.
+- Each release publishes both framework-dependent and self-contained win-x64 ZIP packages.
+- Added `SHA256SUMS.txt` to every GitHub Release for package integrity verification.
+- Alpha, beta and release-candidate versions are automatically marked as GitHub prereleases.
+- Extended the publish script with package suffix support so multiple package variants can be produced without overwriting each other.
 ## 0.1.0-alpha.17
 
 - Added application-scoped event-log windows from the dashboard row context menu.

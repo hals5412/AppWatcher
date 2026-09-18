@@ -1,0 +1,87 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate tag matches project version
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content .\Directory.Build.props
+          $version = [string]$props.Project.PropertyGroup.Version
+          $expectedTag = "v$version"
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "Tag '$env:GITHUB_REF_NAME' does not match project version '$version'. Expected '$expectedTag'."
+          }
+          "APPWATCHER_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Restore
+        run: dotnet restore .\AppWatcher.sln
+
+      - name: Build
+        run: dotnet build .\AppWatcher.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test .\tests\AppWatcher.Core.Tests\AppWatcher.Core.Tests.csproj -c Release --no-build --no-restore
+
+      - name: Publish framework-dependent package
+        shell: pwsh
+        run: .\scripts\publish.ps1
+
+      - name: Publish self-contained package
+        shell: pwsh
+        run: .\scripts\publish.ps1 -SelfContained -PackageSuffix "-self-contained"
+
+      - name: Create SHA256 checksums
+        shell: pwsh
+        run: |
+          $files = @(
+            "artifacts\AppWatcher-win-x64.zip",
+            "artifacts\AppWatcher-win-x64-self-contained.zip"
+          )
+          $lines = foreach ($file in $files) {
+            $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $file
+            "{0}  {1}" -f $hash.Hash.ToLowerInvariant(), (Split-Path $file -Leaf)
+          }
+          [IO.File]::WriteAllLines(
+            (Join-Path $PWD "artifacts\SHA256SUMS.txt"),
+            $lines,
+            [Text.UTF8Encoding]::new($false))
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $prerelease = $env:APPWATCHER_VERSION -match '-(alpha|beta|rc)(\.|$)'
+          $args = @(
+            "release", "create", $env:GITHUB_REF_NAME,
+            "artifacts\AppWatcher-win-x64.zip",
+            "artifacts\AppWatcher-win-x64-self-contained.zip",
+            "artifacts\SHA256SUMS.txt",
+            "--title", "AppWatcher $env:GITHUB_REF_NAME",
+            "--generate-notes"
+          )
+          if ($prerelease) {
+            $args += "--prerelease"
+          }
+          & gh @args
+          if ($LASTEXITCODE -ne 0) {
+            throw "GitHub Release creation failed."
+          }
