@@ -20,7 +20,7 @@ public sealed class ConfigServiceTests
         await service.SaveAsync(configuration, TestContext.Current.CancellationToken);
         var loaded = await service.LoadAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, loaded.SchemaVersion);
+        Assert.Equal(ConfigurationSchema.CurrentVersion, loaded.SchemaVersion);
         Assert.Equal(123, loaded.Global.EventRetentionDays);
         Assert.Equal(UiLanguage.Japanese, loaded.Global.Language);
 
@@ -80,7 +80,7 @@ public sealed class ConfigServiceTests
 
         var loaded = await service.LoadAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, loaded.SchemaVersion);
+        Assert.Equal(ConfigurationSchema.CurrentVersion, loaded.SchemaVersion);
         Assert.Empty(loaded.Applications);
         Assert.True(File.Exists(Path.Combine(temp.Path, "config.json")));
     }
@@ -118,6 +118,133 @@ public sealed class ConfigServiceTests
 
         Assert.True(result.Success, string.Join(Environment.NewLine, result.Messages));
         Assert.Empty(result.Messages);
+    }
+
+    [Fact]
+    public async Task LoadMigratesSchemaOneAndPersistsUpgrade()
+    {
+        using var temp = new TempDirectory();
+        var service = new ConfigService(temp.Path);
+        var legacy = CreateConfiguration("Legacy");
+        legacy.SchemaVersion = 1;
+
+        var configPath = Path.Combine(temp.Path, "config.json");
+        await File.WriteAllTextAsync(
+            configPath,
+            JsonSerializer.Serialize(legacy, JsonDefaults.Options),
+            TestContext.Current.CancellationToken);
+
+        var loaded = await service.LoadAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(ConfigurationSchema.CurrentVersion, loaded.SchemaVersion);
+        Assert.Equal("Legacy", Assert.Single(loaded.Applications).Name);
+
+        var persisted = JsonSerializer.Deserialize<AppWatcherConfiguration>(
+            await File.ReadAllTextAsync(
+                configPath,
+                TestContext.Current.CancellationToken),
+            JsonDefaults.Options);
+        Assert.NotNull(persisted);
+        Assert.Equal(ConfigurationSchema.CurrentVersion, persisted.SchemaVersion);
+
+        var backupPath = Path.Combine(temp.Path, "config.backup-1.json");
+        Assert.True(File.Exists(backupPath));
+        var backup = JsonSerializer.Deserialize<AppWatcherConfiguration>(
+            await File.ReadAllTextAsync(
+                backupPath,
+                TestContext.Current.CancellationToken),
+            JsonDefaults.Options);
+        Assert.NotNull(backup);
+        Assert.Equal(1, backup.SchemaVersion);
+
+        var log = await File.ReadAllTextAsync(
+            Path.Combine(temp.Path, "appwatcher-fallback.log"),
+            TestContext.Current.CancellationToken);
+        Assert.Contains("ConfigurationMigration", log);
+        Assert.Contains("schema v1", log);
+    }
+
+    [Fact]
+    public async Task LoadTreatsMissingSchemaVersionAsLegacySchemaOne()
+    {
+        using var temp = new TempDirectory();
+        var service = new ConfigService(temp.Path);
+        var configPath = Path.Combine(temp.Path, "config.json");
+
+        var legacyJson = """
+            {
+              "applications": [
+                {
+                  "name": "PreVersioned",
+                  "executablePath": "C:\\Apps\\Legacy.exe"
+                }
+              ],
+              "global": {
+                "eventRetentionDays": 30
+              }
+            }
+            """;
+
+        await File.WriteAllTextAsync(
+            configPath,
+            legacyJson,
+            TestContext.Current.CancellationToken);
+
+        var loaded = await service.LoadAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(ConfigurationSchema.CurrentVersion, loaded.SchemaVersion);
+        var app = Assert.Single(loaded.Applications);
+        Assert.Equal("PreVersioned", app.Name);
+        Assert.NotEqual(Guid.Empty, app.Id);
+    }
+
+    [Fact]
+    public async Task FutureSchemaDoesNotFallBackToOlderBackup()
+    {
+        using var temp = new TempDirectory();
+        var service = new ConfigService(temp.Path);
+
+        await service.SaveAsync(
+            CreateConfiguration("OlderBackup"),
+            TestContext.Current.CancellationToken);
+
+        var future = CreateConfiguration("Future");
+        future.SchemaVersion = ConfigurationSchema.CurrentVersion + 10;
+
+        await File.WriteAllTextAsync(
+            Path.Combine(temp.Path, "config.json"),
+            JsonSerializer.Serialize(future, JsonDefaults.Options),
+            TestContext.Current.CancellationToken);
+
+        var exception = await Assert.ThrowsAsync<UnsupportedConfigurationSchemaException>(
+            () => service.LoadAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal(ConfigurationSchema.CurrentVersion + 10, exception.SchemaVersion);
+        Assert.Equal(ConfigurationSchema.CurrentVersion, exception.SupportedVersion);
+    }
+
+    [Fact]
+    public async Task SaveAlwaysStampsCurrentSchemaVersion()
+    {
+        using var temp = new TempDirectory();
+        var service = new ConfigService(temp.Path);
+        var configuration = CreateConfiguration("Stamp");
+        configuration.SchemaVersion = 1;
+
+        await service.SaveAsync(
+            configuration,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(ConfigurationSchema.CurrentVersion, configuration.SchemaVersion);
+
+        var saved = JsonSerializer.Deserialize<AppWatcherConfiguration>(
+            await File.ReadAllTextAsync(
+                Path.Combine(temp.Path, "config.json"),
+                TestContext.Current.CancellationToken),
+            JsonDefaults.Options);
+
+        Assert.NotNull(saved);
+        Assert.Equal(ConfigurationSchema.CurrentVersion, saved.SchemaVersion);
     }
 
     private static AppWatcherConfiguration CreateConfiguration(

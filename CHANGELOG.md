@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.15
+
+- Added a versioned configuration migration pipeline and advanced the configuration schema to version 2.
+- Schema 1 and pre-versioned configuration files are automatically upgraded to schema 2 when loaded.
+- The exact pre-migration config is preserved as `config.backup-1.json` before the upgraded configuration is written atomically.
+- Configuration saves always stamp the current schema version and normalize required collections, strings and application IDs.
+- A configuration created by a newer AppWatcher schema is rejected explicitly instead of silently falling back to an older backup.
+- Added regression tests for schema-1 migration, pre-versioned migration, future-schema rejection and current-version stamping.
 ## 0.1.0-alpha.14
 
 - Added the first automated test project for AppWatcher.Core.

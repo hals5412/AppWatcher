@@ -61,7 +61,7 @@ public enum AppLogLevel
 
 public sealed class AppWatcherConfiguration
 {
-    public int SchemaVersion { get; set; } = 1;
+    public int SchemaVersion { get; set; } = ConfigurationSchema.CurrentVersion;
     public List<ApplicationDefinition> Applications { get; set; } = [];
     public GlobalSettings Global { get; set; } = new();
 }

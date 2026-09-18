@@ -26,38 +26,39 @@ public sealed class ConfigService
             if (!File.Exists(ConfigFile))
             {
                 var empty = new AppWatcherConfiguration();
+                ConfigurationMigrator.PrepareForSave(empty);
                 await WriteFileAsync(ConfigFile, empty, cancellationToken).ConfigureAwait(false);
                 return empty;
             }
 
+            ConfigurationReadResult primary;
             try
             {
-                return await ReadFileAsync(ConfigFile, cancellationToken).ConfigureAwait(false);
+                primary = await ConfigurationMigrator.ReadAsync(
+                    ConfigFile,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (UnsupportedConfigurationSchemaException)
+            {
+                // Never silently fall back to an older backup when the primary file
+                // belongs to a newer AppWatcher version. Doing so could discard settings.
+                throw;
             }
             catch (Exception primaryEx)
             {
-                for (var i = 1; i <= 3; i++)
-                {
-                    var backup = BackupPath(i);
-                    if (!File.Exists(backup))
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        var recovered = await ReadFileAsync(backup, cancellationToken).ConfigureAwait(false);
-                        AppendFallbackLog($"ConfigurationRecovery: recovered config from {backup}. Primary error: {primaryEx.Message}");
-                        return recovered;
-                    }
-                    catch
-                    {
-                        // Try the next backup.
-                    }
-                }
-
-                throw;
+                return await RecoverFromBackupAsync(
+                    primaryEx,
+                    cancellationToken).ConfigureAwait(false);
             }
+
+            if (primary.WasMigrated)
+            {
+                await PersistMigratedConfigurationAsync(
+                    primary,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            return primary.Configuration;
         }
         finally
         {
@@ -73,10 +74,11 @@ public sealed class ConfigService
         await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ConfigurationMigrator.PrepareForSave(configuration);
             RotateBackups();
-            var temp = ConfigFile + ".tmp";
-            await WriteFileAsync(temp, configuration, cancellationToken).ConfigureAwait(false);
-            File.Move(temp, ConfigFile, true);
+            await WriteAtomicallyAsync(
+                configuration,
+                cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -139,20 +141,105 @@ public sealed class ConfigService
         return new ConfigurationValidationResult(messages.Count == 0, messages);
     }
 
-    private void EnsureDataDirectory() => Directory.CreateDirectory(_dataDirectory);
-
-    private static async Task<AppWatcherConfiguration> ReadFileAsync(string path, CancellationToken cancellationToken)
+    private async Task<AppWatcherConfiguration> RecoverFromBackupAsync(
+        Exception primaryException,
+        CancellationToken cancellationToken)
     {
-        await using var stream = File.OpenRead(path);
-        var config = await JsonSerializer.DeserializeAsync<AppWatcherConfiguration>(stream, JsonDefaults.Options, cancellationToken)
-            .ConfigureAwait(false);
-        return config ?? throw new InvalidDataException("Configuration file is empty.");
+        for (var i = 1; i <= 3; i++)
+        {
+            var backup = BackupPath(i);
+            if (!File.Exists(backup))
+            {
+                continue;
+            }
+
+            try
+            {
+                var recovered = await ConfigurationMigrator.ReadAsync(
+                    backup,
+                    cancellationToken).ConfigureAwait(false);
+
+                AppendFallbackLog(
+                    $"ConfigurationRecovery: recovered config from {backup}. Primary error: {primaryException.Message}");
+
+                if (recovered.WasMigrated)
+                {
+                    AppendFallbackLog(
+                        $"ConfigurationMigration: backup schema v{recovered.SourceSchemaVersion} was migrated in memory to v{ConfigurationSchema.CurrentVersion}.");
+                }
+
+                return recovered.Configuration;
+            }
+            catch
+            {
+                // Try the next backup.
+            }
+        }
+
+        throw primaryException;
     }
 
-    private static async Task WriteFileAsync(string path, AppWatcherConfiguration configuration, CancellationToken cancellationToken)
+    private async Task PersistMigratedConfigurationAsync(
+        ConfigurationReadResult migrated,
+        CancellationToken cancellationToken)
     {
-        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-        await JsonSerializer.SerializeAsync(stream, configuration, JsonDefaults.Options, cancellationToken).ConfigureAwait(false);
+        // Rotate first so backup-1 is the exact pre-migration configuration.
+        RotateBackups();
+        await WriteAtomicallyAsync(
+            migrated.Configuration,
+            cancellationToken).ConfigureAwait(false);
+
+        AppendFallbackLog(
+            $"ConfigurationMigration: upgraded config schema v{migrated.SourceSchemaVersion} to v{ConfigurationSchema.CurrentVersion}. Original preserved as {BackupPath(1)}.");
+    }
+
+    private async Task WriteAtomicallyAsync(
+        AppWatcherConfiguration configuration,
+        CancellationToken cancellationToken)
+    {
+        var temp = ConfigFile + ".tmp";
+        try
+        {
+            await WriteFileAsync(
+                temp,
+                configuration,
+                cancellationToken).ConfigureAwait(false);
+            File.Move(temp, ConfigFile, true);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(temp))
+                {
+                    File.Delete(temp);
+                }
+            }
+            catch
+            {
+                // A stale temp file must not mask the original configuration error.
+            }
+        }
+    }
+
+    private void EnsureDataDirectory() => Directory.CreateDirectory(_dataDirectory);
+
+    private static async Task WriteFileAsync(
+        string path,
+        AppWatcherConfiguration configuration,
+        CancellationToken cancellationToken)
+    {
+        await using var stream = new FileStream(
+            path,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.Read);
+
+        await JsonSerializer.SerializeAsync(
+            stream,
+            configuration,
+            JsonDefaults.Options,
+            cancellationToken).ConfigureAwait(false);
         await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -172,11 +259,13 @@ public sealed class ConfigService
         try
         {
             EnsureDataDirectory();
-            File.AppendAllText(FallbackLog, $"{DateTimeOffset.UtcNow:O} {message}{Environment.NewLine}");
+            File.AppendAllText(
+                FallbackLog,
+                $"{DateTimeOffset.UtcNow:O} {message}{Environment.NewLine}");
         }
         catch
         {
-            // Configuration recovery must not fail because diagnostic logging failed.
+            // Configuration recovery/migration must not fail because logging failed.
         }
     }
 }
