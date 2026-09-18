@@ -75,12 +75,7 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            var server = new NamedPipeServerStream(
-                _pipeName,
-                PipeDirection.InOut,
-                NamedPipeServerStream.MaxAllowedServerInstances,
-                PipeTransmissionMode.Byte,
-                PipeOptions.Asynchronous);
+            var server = CreateServerStream();
 
             try
             {
@@ -98,6 +93,29 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
                 // A malformed/disconnected client must not terminate the host.
             }
         }
+    }
+
+    private NamedPipeServerStream CreateServerStream()
+    {
+        // Elevated Helper runs at high integrity while the dashboard runs at medium
+        // integrity. Explicitly grant the current Windows user access and label the
+        // pipe as medium integrity so the same user can connect across the UAC boundary.
+        var sid = WindowsIdentity.GetCurrent().User
+                  ?? throw new InvalidOperationException("The current Windows user SID is unavailable.");
+
+        var security = new PipeSecurity();
+        security.SetSecurityDescriptorSddlForm(
+            $"D:P(A;;GA;;;{sid.Value})S:(ML;;NW;;;ME)");
+
+        return NamedPipeServerStreamAcl.Create(
+            _pipeName,
+            PipeDirection.InOut,
+            NamedPipeServerStream.MaxAllowedServerInstances,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous,
+            inBufferSize: 0,
+            outBufferSize: 0,
+            pipeSecurity: security);
     }
 
     private async Task HandleClientAsync(NamedPipeServerStream server, CancellationToken cancellationToken)

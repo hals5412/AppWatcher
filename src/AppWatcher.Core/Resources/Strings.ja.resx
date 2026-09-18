@@ -741,4 +741,35 @@
   <data name="ExitAppWatcherFailed" xml:space="preserve">
     <value>一部のAppWatcherバックグラウンドコンポーネントが制限時間内に終了しませんでした。</value>
   </data>
-</root>
+  <data name="DuplicateApplicationTitle" xml:space="preserve">
+    <value>同じアプリは登録済みです</value>
+  </data>
+  <data name="DuplicateApplicationPrompt" xml:space="preserve">
+    <value>同じ実行ファイルは既に「{0}」として登録されています。
+
+{1}
+
+AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監視するため、重複登録はできません。</value>
+  </data>
+  <data name="AdminHelperStartFailed" xml:space="preserve">
+    <value>「{0}」の設定は保存されましたが、管理者権限Helperと通信できませんでした。
+
+{1}
+
+一度「ツール」→「自動起動タスクをインストール／修復...」を実行し、ログオン時に管理者権限Helperが起動するよう登録してください。解決しない場合はAppWatcherの診断ログを確認してください。</value>
+  </data>
+  <data name="Event_HostUnavailable" xml:space="preserve">
+    <value>監視ホスト未接続</value>
+  </data>
+  <data name="Event_ConfigurationPending" xml:space="preserve">
+    <value>設定反映待ち</value>
+  </data>
+  <data name="Reason_ElevatedHelperOffline" xml:space="preserve">
+    <value>管理者権限Helperがオフライン</value>
+  </data>
+  <data name="Reason_AgentOffline" xml:space="preserve">
+    <value>Agentがオフライン</value>
+  </data>
+  <data name="Reason_ConfigurationReloadPending" xml:space="preserve">
+    <value>設定の再読み込み待ち</value>
+  </data></root>

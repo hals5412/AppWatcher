@@ -314,9 +314,16 @@ internal sealed class MainForm : Form
 
         if (definition.Privilege == PrivilegeLevel.Administrator)
         {
+            var diagnostic = await _adminClient.SendAsync(
+                new SupervisorRequest(SupervisorCommandType.Ping),
+                TimeSpan.FromMilliseconds(500));
+
             MessageBox.Show(
                 this,
-                Localization.F("CommandFailed", definition.Name, Localization.T("ElevatedOffline")),
+                Localization.F(
+                    "AdminHelperStartFailed",
+                    definition.Name,
+                    diagnostic.Error ?? Localization.T("ElevatedOffline")),
                 "AppWatcher",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
@@ -486,6 +493,18 @@ internal sealed class MainForm : Form
         if (editor.ShowDialog(this) != DialogResult.OK) return;
 
         var config = await _configService.LoadAsync();
+        var duplicate = FindDuplicateApplication(config.Applications, editor.Result);
+        if (duplicate is not null)
+        {
+            MessageBox.Show(
+                this,
+                Localization.F("DuplicateApplicationPrompt", duplicate.Name, duplicate.ExecutablePath),
+                Localization.T("DuplicateApplicationTitle"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return;
+        }
+
         config.Applications.Add(editor.Result);
         await _configService.SaveAsync(config);
         await EnsureHostForDefinitionAsync(editor.Result);
@@ -507,11 +526,53 @@ internal sealed class MainForm : Form
         using var editor = new AppEditForm(clone);
         if (editor.ShowDialog(this) != DialogResult.OK) return;
 
+        var duplicate = FindDuplicateApplication(config.Applications, editor.Result);
+        if (duplicate is not null)
+        {
+            MessageBox.Show(
+                this,
+                Localization.F("DuplicateApplicationPrompt", duplicate.Name, duplicate.ExecutablePath),
+                Localization.T("DuplicateApplicationTitle"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return;
+        }
+
         var index = config.Applications.FindIndex(a => a.Id == selected.Id);
         if (index >= 0) config.Applications[index] = editor.Result;
         await _configService.SaveAsync(config);
         await EnsureHostForDefinitionAsync(editor.Result);
         await ReloadHostsAsync();
+    }
+
+    private static ApplicationDefinition? FindDuplicateApplication(
+        IEnumerable<ApplicationDefinition> applications,
+        ApplicationDefinition candidate)
+    {
+        var candidatePath = NormalizeExecutablePath(candidate.ExecutablePath);
+        if (candidatePath.Length == 0) return null;
+
+        return applications.FirstOrDefault(existing =>
+            existing.Id != candidate.Id &&
+            string.Equals(
+                NormalizeExecutablePath(existing.ExecutablePath),
+                candidatePath,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeExecutablePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+
+        try
+        {
+            return Path.GetFullPath(path.Trim().Trim('"'))
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+        catch
+        {
+            return path.Trim().Trim('"');
+        }
     }
 
     private async Task DeleteSelectedAsync()

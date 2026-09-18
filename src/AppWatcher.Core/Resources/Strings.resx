@@ -741,4 +741,35 @@ Monitored applications will be left running.</value>
   <data name="ExitAppWatcherFailed" xml:space="preserve">
     <value>One or more AppWatcher background components did not stop within the timeout.</value>
   </data>
-</root>
+  <data name="DuplicateApplicationTitle" xml:space="preserve">
+    <value>Application already registered</value>
+  </data>
+  <data name="DuplicateApplicationPrompt" xml:space="preserve">
+    <value>The same executable is already registered as '{0}'.
+
+{1}
+
+AppWatcher v1 monitors one instance per executable path, so duplicate registration is not allowed.</value>
+  </data>
+  <data name="AdminHelperStartFailed" xml:space="preserve">
+    <value>'{0}' was saved, but AppWatcher could not communicate with Elevated Helper.
+
+{1}
+
+Run Tools &gt; Install / repair startup tasks once to register the elevated helper for logon. If the problem continues, check the AppWatcher diagnostic log.</value>
+  </data>
+  <data name="Event_HostUnavailable" xml:space="preserve">
+    <value>Host unavailable</value>
+  </data>
+  <data name="Event_ConfigurationPending" xml:space="preserve">
+    <value>Configuration pending</value>
+  </data>
+  <data name="Reason_ElevatedHelperOffline" xml:space="preserve">
+    <value>Elevated Helper is offline</value>
+  </data>
+  <data name="Reason_AgentOffline" xml:space="preserve">
+    <value>Agent is offline</value>
+  </data>
+  <data name="Reason_ConfigurationReloadPending" xml:space="preserve">
+    <value>Waiting for configuration reload</value>
+  </data></root>

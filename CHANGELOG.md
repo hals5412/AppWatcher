@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.5
+
+- Prevented duplicate application registrations by normalized executable path.
+- Fixed cross-UAC IPC so the medium-integrity dashboard can communicate with the elevated helper securely.
+- Added detailed Elevated Helper startup diagnostics.
+- Localized offline/pending dashboard event and reason codes.
 ## 0.1.0-alpha.4
 
 - Fixed the dashboard layout so column headers are always visible.
