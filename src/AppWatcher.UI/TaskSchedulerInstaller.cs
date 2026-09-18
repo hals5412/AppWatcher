@@ -1,3 +1,4 @@
+using AppWatcher.Core;
 using System.Security.Principal;
 
 namespace AppWatcher.UI;
@@ -19,15 +20,13 @@ internal static class TaskSchedulerInstaller
 
         if (!File.Exists(agent) || !File.Exists(elevated))
         {
-            throw new FileNotFoundException(
-                "AppWatcher.Agent.exe and AppWatcher.Elevated.exe must be in the same folder as AppWatcher.UI.exe. " +
-                "Run this from a published AppWatcher folder, not from an individual project bin directory.");
+            throw new FileNotFoundException(Localization.T("StartupMissingExecutables"));
         }
 
         var serviceType = Type.GetTypeFromProgID("Schedule.Service")
-                          ?? throw new PlatformNotSupportedException("Windows Task Scheduler COM service is unavailable.");
+                          ?? throw new PlatformNotSupportedException(Localization.T("TaskSchedulerUnavailable"));
         dynamic service = Activator.CreateInstance(serviceType)
-                          ?? throw new InvalidOperationException("Could not create Task Scheduler COM service.");
+                          ?? throw new InvalidOperationException(Localization.T("TaskSchedulerCreateFailed"));
         service.Connect();
 
         dynamic root = service.GetFolder("\\");
@@ -50,10 +49,7 @@ internal static class TaskSchedulerInstaller
         try { folder.GetTask("Agent").Run(null); } catch { }
         try { folder.GetTask("Elevated").Run(null); } catch { }
 
-        return "Startup tasks were installed for the current Windows user.\n\n" +
-               "• AppWatcher Agent: interactive normal-user token\n" +
-               "• AppWatcher Elevated: interactive highest-privilege token\n\n" +
-               "Both run only in your logged-on desktop session, avoiding Session 0 so child GUI applications can appear normally.";
+        return Localization.T("StartupInstallSuccess");
     }
 
     private static void Register(dynamic service, dynamic folder, string name, string executable, string workingDirectory, string user, bool highest)

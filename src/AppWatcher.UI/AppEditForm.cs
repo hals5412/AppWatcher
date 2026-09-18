@@ -9,24 +9,24 @@ internal sealed class AppEditForm : Form
     private readonly TextBox _args = new();
     private readonly TextBox _workingDir = new();
     private readonly ComboBox _privilege = new();
-    private readonly CheckBox _monitoringEnabled = new() { Text = "Monitoring enabled" };
-    private readonly CheckBox _startWithWatcher = new() { Text = "Start automatically when AppWatcher starts" };
-    private readonly CheckBox _attachExisting = new() { Text = "Attach to an existing instance if found" };
+    private readonly CheckBox _monitoringEnabled = new() { Text = Localization.T("MonitoringEnabled") };
+    private readonly CheckBox _startWithWatcher = new() { Text = Localization.T("StartWithWatcher") };
+    private readonly CheckBox _attachExisting = new() { Text = Localization.T("AttachExisting") };
 
     private readonly ComboBox _restartPolicy = new();
     private readonly NumericUpDown _restartDelay = Number(0, 3600);
-    private readonly CheckBox _detectHangs = new() { Text = "Detect unresponsive GUI window" };
+    private readonly CheckBox _detectHangs = new() { Text = Localization.T("DetectUnresponsiveWindow") };
     private readonly NumericUpDown _hangTimeout = Number(5, 3600);
     private readonly NumericUpDown _hangInterval = Number(1, 300);
     private readonly NumericUpDown _startupGrace = Number(0, 3600);
 
-    private readonly CheckBox _loopProtection = new() { Text = "Enable restart-loop protection" };
+    private readonly CheckBox _loopProtection = new() { Text = Localization.T("EnableRestartLoopProtection") };
     private readonly NumericUpDown _maxRestarts = Number(1, 1000);
     private readonly NumericUpDown _restartWindow = Number(1, 1440);
     private readonly NumericUpDown _backoff = Number(1, 1440);
     private readonly NumericUpDown _healthyReset = Number(1, 1440);
     private readonly NumericUpDown _gracefulShutdown = Number(1, 300);
-    private readonly CheckBox _forceKill = new() { Text = "Force terminate if graceful shutdown times out" };
+    private readonly CheckBox _forceKill = new() { Text = Localization.T("ForceTerminateAfterTimeout") };
     private readonly ComboBox _childPolicy = new();
     private readonly ComboBox _logLevel = new();
 
@@ -38,20 +38,18 @@ internal sealed class AppEditForm : Form
         _id = definition.Id;
         Result = definition;
 
-        Text = definition.Name == "New application" ? "Add application" : $"Edit - {definition.Name}";
+        Text = string.IsNullOrWhiteSpace(definition.Name) || definition.Name == "New application"
+            ? Localization.T("TitleAddApplication")
+            : Localization.F("TitleEditApplication", definition.Name);
         StartPosition = FormStartPosition.CenterParent;
-        Width = 720;
-        Height = 650;
-        MinimumSize = new Size(650, 560);
+        Width = 760;
+        Height = 670;
+        MinimumSize = new Size(680, 580);
 
-        _privilege.DropDownStyle = ComboBoxStyle.DropDownList;
-        _privilege.Items.AddRange(Enum.GetNames<PrivilegeLevel>());
-        _restartPolicy.DropDownStyle = ComboBoxStyle.DropDownList;
-        _restartPolicy.Items.AddRange(Enum.GetNames<RestartPolicy>());
-        _childPolicy.DropDownStyle = ComboBoxStyle.DropDownList;
-        _childPolicy.Items.Add(ChildProcessPolicy.Unmanaged.ToString());
-        _logLevel.DropDownStyle = ComboBoxStyle.DropDownList;
-        _logLevel.Items.AddRange(Enum.GetNames<AppLogLevel>());
+        BindEnum(_privilege, Enum.GetValues<PrivilegeLevel>(), Localization.Privilege);
+        BindEnum(_restartPolicy, Enum.GetValues<RestartPolicy>(), Localization.RestartPolicy);
+        BindEnum(_childPolicy, new[] { ChildProcessPolicy.Unmanaged }, Localization.ChildProcessPolicy);
+        BindEnum(_logLevel, Enum.GetValues<AppLogLevel>(), Localization.LogLevel);
 
         var tabs = new TabControl { Dock = DockStyle.Fill };
         tabs.TabPages.Add(BuildGeneralTab());
@@ -66,10 +64,10 @@ internal sealed class AppEditForm : Form
             FlowDirection = FlowDirection.RightToLeft,
             Padding = new Padding(6)
         };
-        var save = new Button { Text = "Save", AutoSize = true };
+        var save = new Button { Text = Localization.T("ButtonSave"), AutoSize = true };
         save.Click += (_, _) => SaveAndClose();
-        var cancel = new Button { Text = "Cancel", AutoSize = true, DialogResult = DialogResult.Cancel };
-        var validate = new Button { Text = "Validate", AutoSize = true };
+        var cancel = new Button { Text = Localization.T("ButtonCancel"), AutoSize = true, DialogResult = DialogResult.Cancel };
+        var validate = new Button { Text = Localization.T("ButtonValidate"), AutoSize = true };
         validate.Click += (_, _) => ValidateOnly();
         buttons.Controls.Add(save);
         buttons.Controls.Add(cancel);
@@ -83,11 +81,11 @@ internal sealed class AppEditForm : Form
 
     private TabPage BuildGeneralTab()
     {
-        var page = new TabPage("General");
+        var page = new TabPage(Localization.T("TabGeneral"));
         var table = CreateTable();
         page.Controls.Add(table);
 
-        AddRow(table, "Name", _name);
+        AddRow(table, Localization.T("FieldName"), _name);
 
         var exePanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Height = 30 };
         exePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -97,9 +95,9 @@ internal sealed class AppEditForm : Form
         browseExe.Click += (_, _) => BrowseExecutable();
         exePanel.Controls.Add(_exe, 0, 0);
         exePanel.Controls.Add(browseExe, 1, 0);
-        AddRow(table, "Executable", exePanel);
+        AddRow(table, Localization.T("FieldExecutable"), exePanel);
 
-        AddRow(table, "Arguments", _args);
+        AddRow(table, Localization.T("FieldArguments"), _args);
 
         var wdPanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Height = 30 };
         wdPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -109,17 +107,17 @@ internal sealed class AppEditForm : Form
         browseWd.Click += (_, _) => BrowseWorkingDirectory();
         wdPanel.Controls.Add(_workingDir, 0, 0);
         wdPanel.Controls.Add(browseWd, 1, 0);
-        AddRow(table, "Working directory", wdPanel);
+        AddRow(table, Localization.T("FieldWorkingDirectory"), wdPanel);
 
-        AddRow(table, "Privilege", _privilege);
+        AddRow(table, Localization.T("FieldPrivilege"), _privilege);
         AddFullRow(table, _monitoringEnabled);
         AddFullRow(table, _startWithWatcher);
         AddFullRow(table, _attachExisting);
         AddFullRow(table, new Label
         {
-            Text = "Launch mode: Interactive desktop (normal Windows GUI behavior). AppWatcher does not place targets in Session 0 or a Job Object.",
+            Text = Localization.T("InteractiveLaunchInfo"),
             AutoSize = true,
-            MaximumSize = new Size(520, 0),
+            MaximumSize = new Size(550, 0),
             ForeColor = Color.DimGray
         });
         return page;
@@ -127,39 +125,39 @@ internal sealed class AppEditForm : Form
 
     private TabPage BuildMonitoringTab()
     {
-        var page = new TabPage("Monitoring");
+        var page = new TabPage(Localization.T("TabMonitoring"));
         var table = CreateTable();
         page.Controls.Add(table);
 
-        AddRow(table, "Restart policy", _restartPolicy);
-        AddRow(table, "Restart delay (sec)", _restartDelay);
+        AddRow(table, Localization.T("FieldRestartPolicy"), _restartPolicy);
+        AddRow(table, Localization.T("FieldRestartDelaySeconds"), _restartDelay);
         AddFullRow(table, _detectHangs);
-        AddRow(table, "Hang timeout (sec)", _hangTimeout);
-        AddRow(table, "Hang check interval (sec)", _hangInterval);
-        AddRow(table, "Startup grace period (sec)", _startupGrace);
+        AddRow(table, Localization.T("FieldHangTimeoutSeconds"), _hangTimeout);
+        AddRow(table, Localization.T("FieldHangCheckIntervalSeconds"), _hangInterval);
+        AddRow(table, Localization.T("FieldStartupGraceSeconds"), _startupGrace);
         AddFullRow(table, _loopProtection);
-        AddRow(table, "Max restarts", _maxRestarts);
-        AddRow(table, "Within (minutes)", _restartWindow);
-        AddRow(table, "Backoff (minutes)", _backoff);
-        AddRow(table, "Healthy reset (minutes)", _healthyReset);
+        AddRow(table, Localization.T("FieldMaxRestarts"), _maxRestarts);
+        AddRow(table, Localization.T("FieldWithinMinutes"), _restartWindow);
+        AddRow(table, Localization.T("FieldBackoffMinutes"), _backoff);
+        AddRow(table, Localization.T("FieldHealthyResetMinutes"), _healthyReset);
         return page;
     }
 
     private TabPage BuildAdvancedTab()
     {
-        var page = new TabPage("Advanced");
+        var page = new TabPage(Localization.T("TabAdvanced"));
         var table = CreateTable();
         page.Controls.Add(table);
 
-        AddRow(table, "Graceful shutdown timeout", _gracefulShutdown);
+        AddRow(table, Localization.T("FieldGracefulShutdownTimeout"), _gracefulShutdown);
         AddFullRow(table, _forceKill);
-        AddRow(table, "Child process policy", _childPolicy);
-        AddRow(table, "Log level", _logLevel);
+        AddRow(table, Localization.T("FieldChildProcessPolicy"), _childPolicy);
+        AddRow(table, Localization.T("FieldLogLevel"), _logLevel);
         AddFullRow(table, new Label
         {
-            Text = "Recommended child-process policy: Unmanaged. This preserves compatibility with applications such as TVRock that start TVTest or other interactive GUI processes.",
+            Text = Localization.T("ChildProcessPolicyInfo"),
             AutoSize = true,
-            MaximumSize = new Size(520, 0),
+            MaximumSize = new Size(550, 0),
             ForeColor = Color.DimGray
         });
         return page;
@@ -174,7 +172,7 @@ internal sealed class AppEditForm : Form
         AutoSize = false,
         ColumnStyles =
         {
-            new ColumnStyle(SizeType.Absolute, 190),
+            new ColumnStyle(SizeType.Absolute, 220),
             new ColumnStyle(SizeType.Percent, 100)
         }
     };
@@ -186,7 +184,7 @@ internal sealed class AppEditForm : Form
         var caption = new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 8, 3, 8) };
         control.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         control.Margin = new Padding(3, 5, 3, 5);
-        if (control is TextBox or ComboBox) control.Width = 430;
+        if (control is TextBox or ComboBox) control.Width = 440;
         table.Controls.Add(caption, 0, row);
         table.Controls.Add(control, 1, row);
     }
@@ -212,12 +210,12 @@ internal sealed class AppEditForm : Form
         _exe.Text = d.ExecutablePath;
         _args.Text = d.Arguments;
         _workingDir.Text = d.WorkingDirectory;
-        _privilege.SelectedItem = d.Privilege.ToString();
+        SelectEnum(_privilege, d.Privilege);
         _monitoringEnabled.Checked = d.MonitoringEnabled;
         _startWithWatcher.Checked = d.StartWithWatcher;
         _attachExisting.Checked = d.AttachExisting;
 
-        _restartPolicy.SelectedItem = d.RestartPolicy.ToString();
+        SelectEnum(_restartPolicy, d.RestartPolicy);
         _restartDelay.Value = Clamp(_restartDelay, d.RestartDelaySeconds);
         _detectHangs.Checked = d.DetectHangs;
         _hangTimeout.Value = Clamp(_hangTimeout, d.HangTimeoutSeconds);
@@ -230,11 +228,12 @@ internal sealed class AppEditForm : Form
         _healthyReset.Value = Clamp(_healthyReset, d.HealthyResetMinutes);
         _gracefulShutdown.Value = Clamp(_gracefulShutdown, d.GracefulShutdownSeconds);
         _forceKill.Checked = d.ForceKillAfterTimeout;
-        _childPolicy.SelectedItem = d.ChildProcessPolicy.ToString();
-        _logLevel.SelectedItem = d.LogLevel.ToString();
+        SelectEnum(_childPolicy, d.ChildProcessPolicy);
+        SelectEnum(_logLevel, d.LogLevel);
     }
 
-    private static decimal Clamp(NumericUpDown control, int value) => Math.Min(control.Maximum, Math.Max(control.Minimum, value));
+    private static decimal Clamp(NumericUpDown control, int value) =>
+        Math.Min(control.Maximum, Math.Max(control.Minimum, value));
 
     private ApplicationDefinition BuildResult() => new()
     {
@@ -243,11 +242,11 @@ internal sealed class AppEditForm : Form
         ExecutablePath = _exe.Text.Trim(),
         Arguments = _args.Text,
         WorkingDirectory = _workingDir.Text.Trim(),
-        Privilege = ParseEnum(_privilege, PrivilegeLevel.Normal),
+        Privilege = SelectedEnum(_privilege, PrivilegeLevel.Normal),
         MonitoringEnabled = _monitoringEnabled.Checked,
         StartWithWatcher = _startWithWatcher.Checked,
         AttachExisting = _attachExisting.Checked,
-        RestartPolicy = ParseEnum(_restartPolicy, RestartPolicy.AnyUnexpectedExit),
+        RestartPolicy = SelectedEnum(_restartPolicy, RestartPolicy.AnyUnexpectedExit),
         RestartDelaySeconds = (int)_restartDelay.Value,
         DetectHangs = _detectHangs.Checked,
         HangTimeoutSeconds = (int)_hangTimeout.Value,
@@ -260,19 +259,41 @@ internal sealed class AppEditForm : Form
         HealthyResetMinutes = (int)_healthyReset.Value,
         GracefulShutdownSeconds = (int)_gracefulShutdown.Value,
         ForceKillAfterTimeout = _forceKill.Checked,
-        ChildProcessPolicy = ParseEnum(_childPolicy, ChildProcessPolicy.Unmanaged),
-        LogLevel = ParseEnum(_logLevel, AppLogLevel.Information)
+        ChildProcessPolicy = SelectedEnum(_childPolicy, ChildProcessPolicy.Unmanaged),
+        LogLevel = SelectedEnum(_logLevel, AppLogLevel.Information)
     };
 
-    private static T ParseEnum<T>(ComboBox box, T fallback) where T : struct, Enum =>
-        Enum.TryParse<T>(box.SelectedItem?.ToString(), out var value) ? value : fallback;
+    private static void BindEnum<T>(ComboBox box, IEnumerable<T> values, Func<T, string> text) where T : struct, Enum
+    {
+        box.DropDownStyle = ComboBoxStyle.DropDownList;
+        foreach (var value in values)
+        {
+            box.Items.Add(new LocalizedOption<T>(value, text(value)));
+        }
+    }
+
+    private static void SelectEnum<T>(ComboBox box, T value) where T : struct, Enum
+    {
+        foreach (var item in box.Items.OfType<LocalizedOption<T>>())
+        {
+            if (EqualityComparer<T>.Default.Equals(item.Value, value))
+            {
+                box.SelectedItem = item;
+                return;
+            }
+        }
+        if (box.Items.Count > 0) box.SelectedIndex = 0;
+    }
+
+    private static T SelectedEnum<T>(ComboBox box, T fallback) where T : struct, Enum =>
+        box.SelectedItem is LocalizedOption<T> item ? item.Value : fallback;
 
     private void ValidateOnly()
     {
         var result = new ConfigService().Validate(BuildResult());
         MessageBox.Show(this,
-            result.Success ? "Configuration is valid." : string.Join(Environment.NewLine, result.Messages),
-            "Configuration validation",
+            result.Success ? Localization.T("ConfigurationValid") : string.Join(Environment.NewLine, result.Messages),
+            Localization.T("ConfigurationValidation"),
             MessageBoxButtons.OK,
             result.Success ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
     }
@@ -283,7 +304,7 @@ internal sealed class AppEditForm : Form
         var validation = new ConfigService().Validate(candidate);
         if (!validation.Success)
         {
-            MessageBox.Show(this, string.Join(Environment.NewLine, validation.Messages), "Cannot save", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, string.Join(Environment.NewLine, validation.Messages), Localization.T("CannotSave"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -296,9 +317,9 @@ internal sealed class AppEditForm : Form
     {
         using var dialog = new OpenFileDialog
         {
-            Filter = "Applications (*.exe)|*.exe|All files (*.*)|*.*",
+            Filter = Localization.T("ApplicationsFilter"),
             CheckFileExists = true,
-            Title = "Select application"
+            Title = Localization.T("SelectApplication")
         };
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
         _exe.Text = dialog.FileName;
@@ -314,7 +335,11 @@ internal sealed class AppEditForm : Form
 
     private void BrowseWorkingDirectory()
     {
-        using var dialog = new FolderBrowserDialog { Description = "Select working directory", UseDescriptionForTitle = true };
+        using var dialog = new FolderBrowserDialog
+        {
+            Description = Localization.T("SelectWorkingDirectory"),
+            UseDescriptionForTitle = true
+        };
         if (dialog.ShowDialog(this) == DialogResult.OK)
         {
             _workingDir.Text = dialog.SelectedPath;

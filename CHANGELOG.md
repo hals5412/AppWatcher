@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.2
+
+- Added Japanese / English localization with automatic Windows display-language selection.
+- Added a Settings dialog for language selection and event retention.
+- Localized dashboard, application editor, event log, tray menu, startup setup, validation messages, state names and common event/reason codes.
+- Event-log details preserve the original event/reason codes while displaying localized descriptions.
+
 ## 0.1.0-alpha.1
 
 Initial implementation scaffold:

@@ -2,6 +2,15 @@ using System.Text.Json.Serialization;
 
 namespace AppWatcher.Core;
 
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum UiLanguage
+{
+    Auto,
+    Japanese,
+    English
+}
+
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PrivilegeLevel
 {
@@ -63,12 +72,14 @@ public sealed class GlobalSettings
     public int EventDatabaseMaxMegabytes { get; set; } = 100;
     public int UiRefreshSeconds { get; set; } = 2;
     public bool CheckForUpdates { get; set; } = false;
+    [JsonPropertyName("uiLanguage")]
+    public UiLanguage Language { get; set; } = UiLanguage.Auto;
 }
 
 public sealed class ApplicationDefinition
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "New application";
+    public string Name { get; set; } = string.Empty;
     public string ExecutablePath { get; set; } = string.Empty;
     public string Arguments { get; set; } = string.Empty;
     public string WorkingDirectory { get; set; } = string.Empty;

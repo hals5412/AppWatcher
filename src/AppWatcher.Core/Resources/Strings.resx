@@ -1,0 +1,707 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AgentOffline" xml:space="preserve">
+    <value>Agent: OFFLINE</value>
+  </data>
+  <data name="AgentStatusFormat" xml:space="preserve">
+    <value>Agent: PID {0}, up {1}, {2:F1} MB</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="ApplicationsFilter" xml:space="preserve">
+    <value>Applications (*.exe)|*.exe|All files (*.*)|*.*</value>
+  </data>
+  <data name="AttachExisting" xml:space="preserve">
+    <value>Attach to an existing instance if found</value>
+  </data>
+  <data name="ButtonAdd" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="ButtonCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ButtonDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="ButtonEdit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="ButtonLogs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="ButtonPause" xml:space="preserve">
+    <value>Pause ▼</value>
+  </data>
+  <data name="ButtonRefresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ButtonRestart" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="ButtonResume" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+  <data name="ButtonSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ButtonStart" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="ButtonStop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="ButtonValidate" xml:space="preserve">
+    <value>Validate</value>
+  </data>
+  <data name="CannotSave" xml:space="preserve">
+    <value>Cannot save</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="ChildProcessPolicyInfo" xml:space="preserve">
+    <value>Recommended child-process policy: Unmanaged. This preserves compatibility with applications such as TVRock that start TVTest or other interactive GUI processes.</value>
+  </data>
+  <data name="ChildProcessPolicy_StopWithParent" xml:space="preserve">
+    <value>Stop with parent</value>
+  </data>
+  <data name="ChildProcessPolicy_TrackOnly" xml:space="preserve">
+    <value>Track only</value>
+  </data>
+  <data name="ChildProcessPolicy_Unmanaged" xml:space="preserve">
+    <value>Unmanaged</value>
+  </data>
+  <data name="CloseDashboard" xml:space="preserve">
+    <value>Close dashboard</value>
+  </data>
+  <data name="ColumnApplication" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="ColumnEvent" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="ColumnExecutable" xml:space="preserve">
+    <value>Executable</value>
+  </data>
+  <data name="ColumnLastEvent" xml:space="preserve">
+    <value>Last event</value>
+  </data>
+  <data name="ColumnLevel" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="ColumnPid" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="ColumnPrivilege" xml:space="preserve">
+    <value>Privilege</value>
+  </data>
+  <data name="ColumnReason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="ColumnRestarts" xml:space="preserve">
+    <value>Restarts</value>
+  </data>
+  <data name="ColumnStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="ColumnTime" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="ColumnUptime" xml:space="preserve">
+    <value>Uptime</value>
+  </data>
+  <data name="CommandFailed" xml:space="preserve">
+    <value>Command failed for {0}.
+
+{1}</value>
+  </data>
+  <data name="ConfigurationValid" xml:space="preserve">
+    <value>Configuration is valid.</value>
+  </data>
+  <data name="ConfigurationValidation" xml:space="preserve">
+    <value>Configuration validation</value>
+  </data>
+  <data name="CouldNotOpenDashboard" xml:space="preserve">
+    <value>Could not open the dashboard.
+
+{0}</value>
+  </data>
+  <data name="CouldNotPauseMonitoring" xml:space="preserve">
+    <value>Could not pause monitoring.
+
+{0}</value>
+  </data>
+  <data name="CouldNotReadEventLog" xml:space="preserve">
+    <value>Could not read event log</value>
+  </data>
+  <data name="CouldNotResumeMonitoring" xml:space="preserve">
+    <value>Could not resume monitoring.
+
+{0}</value>
+  </data>
+  <data name="CreateDiagnosticPackage" xml:space="preserve">
+    <value>Create diagnostic package...</value>
+  </data>
+  <data name="DashboardNotFound" xml:space="preserve">
+    <value>Dashboard executable was not found next to the Agent.
+
+Expected:
+{0}</value>
+  </data>
+  <data name="DetailApplication" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="DetailEvent" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="DetailEventCode" xml:space="preserve">
+    <value>Event code</value>
+  </data>
+  <data name="DetailLevel" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="DetailReason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="DetailReasonCode" xml:space="preserve">
+    <value>Reason code</value>
+  </data>
+  <data name="DetailTimestamp" xml:space="preserve">
+    <value>Timestamp</value>
+  </data>
+  <data name="DetectUnresponsiveWindow" xml:space="preserve">
+    <value>Detect unresponsive GUI window</value>
+  </data>
+  <data name="DiagnosticPackageCreated" xml:space="preserve">
+    <value>Diagnostic package created successfully.</value>
+  </data>
+  <data name="DiagnosticPackageFailed" xml:space="preserve">
+    <value>Diagnostic package failed</value>
+  </data>
+  <data name="Duration15Minutes" xml:space="preserve">
+    <value>15 minutes</value>
+  </data>
+  <data name="Duration1Hour" xml:space="preserve">
+    <value>1 hour</value>
+  </data>
+  <data name="Duration4Hours" xml:space="preserve">
+    <value>4 hours</value>
+  </data>
+  <data name="DurationIndefinitely" xml:space="preserve">
+    <value>Indefinitely</value>
+  </data>
+  <data name="ElevatedOffline" xml:space="preserve">
+    <value>Elevated: OFFLINE</value>
+  </data>
+  <data name="ElevatedStatusFormat" xml:space="preserve">
+    <value>Elevated: PID {0}, up {1}, {2:F1} MB</value>
+  </data>
+  <data name="EnableRestartLoopProtection" xml:space="preserve">
+    <value>Enable restart-loop protection</value>
+  </data>
+  <data name="EventDatabaseMaxMb" xml:space="preserve">
+    <value>Event database max size (MB)</value>
+  </data>
+  <data name="EventLogTitle" xml:space="preserve">
+    <value>AppWatcher Event Log</value>
+  </data>
+  <data name="EventRetentionDays" xml:space="preserve">
+    <value>Event retention (days)</value>
+  </data>
+  <data name="Event_ApplicationPaused" xml:space="preserve">
+    <value>Application paused</value>
+  </data>
+  <data name="Event_Attached" xml:space="preserve">
+    <value>Attached to process</value>
+  </data>
+  <data name="Event_ConfigurationReloaded" xml:space="preserve">
+    <value>Configuration reloaded</value>
+  </data>
+  <data name="Event_HangDetected" xml:space="preserve">
+    <value>Hang detected</value>
+  </data>
+  <data name="Event_HostStarted" xml:space="preserve">
+    <value>Host started</value>
+  </data>
+  <data name="Event_HostStopped" xml:space="preserve">
+    <value>Host stopped</value>
+  </data>
+  <data name="Event_MaintenanceEnded" xml:space="preserve">
+    <value>Maintenance ended</value>
+  </data>
+  <data name="Event_MaintenanceStarted" xml:space="preserve">
+    <value>Maintenance started</value>
+  </data>
+  <data name="Event_MonitoringResumed" xml:space="preserve">
+    <value>Monitoring resumed</value>
+  </data>
+  <data name="Event_ProcessExited" xml:space="preserve">
+    <value>Process exited</value>
+  </data>
+  <data name="Event_ProcessForceKilled" xml:space="preserve">
+    <value>Process force-terminated</value>
+  </data>
+  <data name="Event_ProcessStartFailed" xml:space="preserve">
+    <value>Process start failed</value>
+  </data>
+  <data name="Event_ProcessStartRequested" xml:space="preserve">
+    <value>Process start requested</value>
+  </data>
+  <data name="Event_ProcessStarted" xml:space="preserve">
+    <value>Process started</value>
+  </data>
+  <data name="Event_ProcessStopFailed" xml:space="preserve">
+    <value>Process stop failed</value>
+  </data>
+  <data name="Event_ProcessStopRequested" xml:space="preserve">
+    <value>Process stop requested</value>
+  </data>
+  <data name="Event_RestartDecision" xml:space="preserve">
+    <value>Restart decision</value>
+  </data>
+  <data name="Event_RestartScheduled" xml:space="preserve">
+    <value>Restart scheduled</value>
+  </data>
+  <data name="Event_RestartSuppressed" xml:space="preserve">
+    <value>Restart suppressed</value>
+  </data>
+  <data name="Event_WindowResponsiveAgain" xml:space="preserve">
+    <value>Window responsive again</value>
+  </data>
+  <data name="Event_WindowUnresponsiveObserved" xml:space="preserve">
+    <value>Window unresponsive</value>
+  </data>
+  <data name="ExitAgentPrompt" xml:space="preserve">
+    <value>Stop AppWatcher monitoring?
+
+Managed applications will be left running.</value>
+  </data>
+  <data name="ExitAgentTitle" xml:space="preserve">
+    <value>Exit AppWatcher Agent</value>
+  </data>
+  <data name="FieldArguments" xml:space="preserve">
+    <value>Arguments</value>
+  </data>
+  <data name="FieldBackoffMinutes" xml:space="preserve">
+    <value>Backoff (minutes)</value>
+  </data>
+  <data name="FieldChildProcessPolicy" xml:space="preserve">
+    <value>Child process policy</value>
+  </data>
+  <data name="FieldExecutable" xml:space="preserve">
+    <value>Executable</value>
+  </data>
+  <data name="FieldGracefulShutdownTimeout" xml:space="preserve">
+    <value>Graceful shutdown timeout</value>
+  </data>
+  <data name="FieldHangCheckIntervalSeconds" xml:space="preserve">
+    <value>Hang check interval (sec)</value>
+  </data>
+  <data name="FieldHangTimeoutSeconds" xml:space="preserve">
+    <value>Hang timeout (sec)</value>
+  </data>
+  <data name="FieldHealthyResetMinutes" xml:space="preserve">
+    <value>Healthy reset (minutes)</value>
+  </data>
+  <data name="FieldLogLevel" xml:space="preserve">
+    <value>Log level</value>
+  </data>
+  <data name="FieldMaxRestarts" xml:space="preserve">
+    <value>Max restarts</value>
+  </data>
+  <data name="FieldName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="FieldPrivilege" xml:space="preserve">
+    <value>Privilege</value>
+  </data>
+  <data name="FieldRestartDelaySeconds" xml:space="preserve">
+    <value>Restart delay (sec)</value>
+  </data>
+  <data name="FieldRestartPolicy" xml:space="preserve">
+    <value>Restart policy</value>
+  </data>
+  <data name="FieldStartupGraceSeconds" xml:space="preserve">
+    <value>Startup grace period (sec)</value>
+  </data>
+  <data name="FieldWithinMinutes" xml:space="preserve">
+    <value>Within (minutes)</value>
+  </data>
+  <data name="FieldWorkingDirectory" xml:space="preserve">
+    <value>Working directory</value>
+  </data>
+  <data name="ForceTerminateAfterTimeout" xml:space="preserve">
+    <value>Force terminate if graceful shutdown times out</value>
+  </data>
+  <data name="HostExecutableNotFound" xml:space="preserve">
+    <value>Host executable was not found:
+{0}</value>
+  </data>
+  <data name="HostLabel" xml:space="preserve">
+    <value>(host)</value>
+  </data>
+  <data name="InstallRepairStartupTasks" xml:space="preserve">
+    <value>Install / repair startup tasks...</value>
+  </data>
+  <data name="InteractiveLaunchInfo" xml:space="preserve">
+    <value>Launch mode: Interactive desktop (normal Windows GUI behavior). AppWatcher does not place targets in Session 0 or a Job Object.</value>
+  </data>
+  <data name="LabelApplication" xml:space="preserve">
+    <value>Application:</value>
+  </data>
+  <data name="LabelLevel" xml:space="preserve">
+    <value>Level:</value>
+  </data>
+  <data name="LabelPeriod" xml:space="preserve">
+    <value>Period:</value>
+  </data>
+  <data name="LanguageAuto" xml:space="preserve">
+    <value>Automatic (Windows display language)</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageJapanese" xml:space="preserve">
+    <value>Japanese</value>
+  </data>
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="LogLevel_Critical" xml:space="preserve">
+    <value>Critical</value>
+  </data>
+  <data name="LogLevel_Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="LogLevel_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="LogLevel_Information" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="LogLevel_Trace" xml:space="preserve">
+    <value>Trace</value>
+  </data>
+  <data name="LogLevel_Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="MaintenanceActive" xml:space="preserve">
+    <value>MAINTENANCE ACTIVE</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="MenuMaintenance" xml:space="preserve">
+    <value>Maintenance</value>
+  </data>
+  <data name="MenuTools" xml:space="preserve">
+    <value>Tools</value>
+  </data>
+  <data name="MonitoringEnabled" xml:space="preserve">
+    <value>Monitoring enabled</value>
+  </data>
+  <data name="OpenDataFolder" xml:space="preserve">
+    <value>Open data folder</value>
+  </data>
+  <data name="PauseAll15Minutes" xml:space="preserve">
+    <value>Pause all - 15 minutes</value>
+  </data>
+  <data name="PauseAll1Hour" xml:space="preserve">
+    <value>Pause all - 1 hour</value>
+  </data>
+  <data name="PauseAll4Hours" xml:space="preserve">
+    <value>Pause all - 4 hours</value>
+  </data>
+  <data name="PauseAllIndefinitely" xml:space="preserve">
+    <value>Pause all - indefinitely</value>
+  </data>
+  <data name="Period24Hours" xml:space="preserve">
+    <value>24 hours</value>
+  </data>
+  <data name="Period30Days" xml:space="preserve">
+    <value>30 days</value>
+  </data>
+  <data name="Period7Days" xml:space="preserve">
+    <value>7 days</value>
+  </data>
+  <data name="Privilege_Administrator" xml:space="preserve">
+    <value>Administrator</value>
+  </data>
+  <data name="Privilege_Normal" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="Reason_AutomaticRestart" xml:space="preserve">
+    <value>Automatic restart</value>
+  </data>
+  <data name="Reason_BackoffActive" xml:space="preserve">
+    <value>Backoff active</value>
+  </data>
+  <data name="Reason_BackoffExpired" xml:space="preserve">
+    <value>Backoff expired</value>
+  </data>
+  <data name="Reason_ExistingProcessAttached" xml:space="preserve">
+    <value>Existing process attached</value>
+  </data>
+  <data name="Reason_GlobalMaintenance" xml:space="preserve">
+    <value>Global maintenance</value>
+  </data>
+  <data name="Reason_HangTimeoutExceeded" xml:space="preserve">
+    <value>Hang timeout exceeded</value>
+  </data>
+  <data name="Reason_IntentionalStop" xml:space="preserve">
+    <value>Intentional stop</value>
+  </data>
+  <data name="Reason_ManualRestart" xml:space="preserve">
+    <value>Manual restart</value>
+  </data>
+  <data name="Reason_ManualStart" xml:space="preserve">
+    <value>Manual start</value>
+  </data>
+  <data name="Reason_ManualStop" xml:space="preserve">
+    <value>Manual stop</value>
+  </data>
+  <data name="Reason_MonitoringDisabled" xml:space="preserve">
+    <value>Monitoring disabled</value>
+  </data>
+  <data name="Reason_MonitoringPaused" xml:space="preserve">
+    <value>Monitoring paused</value>
+  </data>
+  <data name="Reason_RecoveredBeforeTimeout" xml:space="preserve">
+    <value>Recovered before timeout</value>
+  </data>
+  <data name="Reason_RestartAllowed" xml:space="preserve">
+    <value>Restart allowed</value>
+  </data>
+  <data name="Reason_RestartLimitExceeded" xml:space="preserve">
+    <value>Restart limit exceeded</value>
+  </data>
+  <data name="Reason_RestartPolicyDeclined" xml:space="preserve">
+    <value>Restart policy declined</value>
+  </data>
+  <data name="Reason_StartWithWatcherDisabled" xml:space="preserve">
+    <value>Start with AppWatcher disabled</value>
+  </data>
+  <data name="Reason_StartupPolicy" xml:space="preserve">
+    <value>Startup policy</value>
+  </data>
+  <data name="Reason_UnexpectedProcessExit" xml:space="preserve">
+    <value>Unexpected process exit</value>
+  </data>
+  <data name="Reason_UserRequest" xml:space="preserve">
+    <value>User request</value>
+  </data>
+  <data name="Reason_UserResume" xml:space="preserve">
+    <value>User resume</value>
+  </data>
+  <data name="Reason_WatcherStartup" xml:space="preserve">
+    <value>AppWatcher startup</value>
+  </data>
+  <data name="Reason_WindowNotResponding" xml:space="preserve">
+    <value>Window not responding</value>
+  </data>
+  <data name="Reason_WindowResponsive" xml:space="preserve">
+    <value>Window responsive</value>
+  </data>
+  <data name="Reason_WindowsShutdownInProgress" xml:space="preserve">
+    <value>Windows shutdown in progress</value>
+  </data>
+  <data name="ReloadConfiguration" xml:space="preserve">
+    <value>Reload configuration</value>
+  </data>
+  <data name="RemoveApplicationPrompt" xml:space="preserve">
+    <value>Remove '{0}' from AppWatcher?
+
+The application itself will not be stopped.</value>
+  </data>
+  <data name="RemoveApplicationTitle" xml:space="preserve">
+    <value>Remove application</value>
+  </data>
+  <data name="RestartPolicy_AbnormalExitOnly" xml:space="preserve">
+    <value>Restart only on abnormal exit</value>
+  </data>
+  <data name="RestartPolicy_AnyUnexpectedExit" xml:space="preserve">
+    <value>Restart on any unexpected exit</value>
+  </data>
+  <data name="RestartPolicy_Never" xml:space="preserve">
+    <value>Never restart automatically</value>
+  </data>
+  <data name="ResumeAllMonitoring" xml:space="preserve">
+    <value>Resume all monitoring</value>
+  </data>
+  <data name="SaveDiagnosticPackageTitle" xml:space="preserve">
+    <value>Save AppWatcher diagnostic package</value>
+  </data>
+  <data name="SelectApplication" xml:space="preserve">
+    <value>Select application</value>
+  </data>
+  <data name="SelectWorkingDirectory" xml:space="preserve">
+    <value>Select working directory</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings...</value>
+  </data>
+  <data name="SettingsGeneralTab" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="SettingsLogsTab" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="SettingsSavedRestart" xml:space="preserve">
+    <value>Settings were saved. Restart AppWatcher Agent and reopen the dashboard to apply the language to all components.</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>AppWatcher Settings</value>
+  </data>
+  <data name="StartElevatedHelperNow" xml:space="preserve">
+    <value>Start Elevated helper now...</value>
+  </data>
+  <data name="StartNormalAgentNow" xml:space="preserve">
+    <value>Start normal Agent now</value>
+  </data>
+  <data name="StartWithWatcher" xml:space="preserve">
+    <value>Start automatically when AppWatcher starts</value>
+  </data>
+  <data name="StartupInstallFailed" xml:space="preserve">
+    <value>Startup task installation failed.
+
+{0}</value>
+  </data>
+  <data name="StartupInstallSuccess" xml:space="preserve">
+    <value>Startup tasks were installed for the current Windows user.
+
+• AppWatcher Agent: interactive normal-user token
+• AppWatcher Elevated: interactive highest-privilege token
+
+Both run only in your logged-on desktop session, avoiding Session 0 so child GUI applications can appear normally.</value>
+  </data>
+  <data name="StartupMissingExecutables" xml:space="preserve">
+    <value>AppWatcher.Agent.exe and AppWatcher.Elevated.exe must be in the same folder as AppWatcher.UI.exe. Run this from a published AppWatcher folder, not from an individual project bin directory.</value>
+  </data>
+  <data name="StartupSetupTitle" xml:space="preserve">
+    <value>AppWatcher startup setup</value>
+  </data>
+  <data name="State_Backoff" xml:space="preserve">
+    <value>Backoff</value>
+  </data>
+  <data name="State_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="State_Healthy" xml:space="preserve">
+    <value>Healthy</value>
+  </data>
+  <data name="State_Paused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="State_Restarting" xml:space="preserve">
+    <value>Restarting</value>
+  </data>
+  <data name="State_Starting" xml:space="preserve">
+    <value>Starting</value>
+  </data>
+  <data name="State_Stopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="State_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="State_Unresponsive" xml:space="preserve">
+    <value>Unresponsive</value>
+  </data>
+  <data name="SummaryFormat" xml:space="preserve">
+    <value>Healthy {0}    Paused {1}    Problems {2}    Total {3}</value>
+  </data>
+  <data name="TabAdvanced" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="TabGeneral" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="TabMonitoring" xml:space="preserve">
+    <value>Monitoring</value>
+  </data>
+  <data name="TaskSchedulerCreateFailed" xml:space="preserve">
+    <value>Could not create Task Scheduler COM service.</value>
+  </data>
+  <data name="TaskSchedulerUnavailable" xml:space="preserve">
+    <value>Windows Task Scheduler COM service is unavailable.</value>
+  </data>
+  <data name="TitleAddApplication" xml:space="preserve">
+    <value>Add application</value>
+  </data>
+  <data name="TitleEditApplication" xml:space="preserve">
+    <value>Edit - {0}</value>
+  </data>
+  <data name="TrayExitAgent" xml:space="preserve">
+    <value>Exit AppWatcher Agent</value>
+  </data>
+  <data name="TrayMaintenanceMode" xml:space="preserve">
+    <value>AppWatcher - Maintenance mode</value>
+  </data>
+  <data name="TrayMonitored" xml:space="preserve">
+    <value>AppWatcher - {0} monitored</value>
+  </data>
+  <data name="TrayMonitoring" xml:space="preserve">
+    <value>AppWatcher - Monitoring</value>
+  </data>
+  <data name="TrayOpenDashboard" xml:space="preserve">
+    <value>Open Dashboard</value>
+  </data>
+  <data name="TrayPauseAllMonitoring" xml:space="preserve">
+    <value>Pause all monitoring</value>
+  </data>
+  <data name="TrayPaused" xml:space="preserve">
+    <value>AppWatcher - {0} paused</value>
+  </data>
+  <data name="TrayProblems" xml:space="preserve">
+    <value>AppWatcher - {0} problem(s)</value>
+  </data>
+  <data name="TrayResumeAllMonitoring" xml:space="preserve">
+    <value>Resume all monitoring</value>
+  </data>
+  <data name="UptimeDaysFormat" xml:space="preserve">
+    <value>{0}d {1:00}:{2:00}</value>
+  </data>
+  <data name="ValidationApplicationNameRequired" xml:space="preserve">
+    <value>Application name is required.</value>
+  </data>
+  <data name="ValidationExecutableMissing" xml:space="preserve">
+    <value>Executable does not exist: {0}</value>
+  </data>
+  <data name="ValidationExecutablePathRequired" xml:space="preserve">
+    <value>Executable path is required.</value>
+  </data>
+  <data name="ValidationHangInterval" xml:space="preserve">
+    <value>Hang check interval must be at least 1 second.</value>
+  </data>
+  <data name="ValidationHangTimeout" xml:space="preserve">
+    <value>Hang timeout must be greater than or equal to the hang check interval.</value>
+  </data>
+  <data name="ValidationMaxRestarts" xml:space="preserve">
+    <value>Maximum restarts must be at least 1.</value>
+  </data>
+  <data name="ValidationRestartDelayNegative" xml:space="preserve">
+    <value>Restart delay cannot be negative.</value>
+  </data>
+  <data name="ValidationRestartWindowBackoff" xml:space="preserve">
+    <value>Restart window and backoff must be at least 1 minute.</value>
+  </data>
+  <data name="ValidationWorkingDirectoryMissing" xml:space="preserve">
+    <value>Working directory does not exist: {0}</value>
+  </data>
+  <data name="ZipFilter" xml:space="preserve">
+    <value>ZIP archive (*.zip)|*.zip</value>
+  </data>
+</root>

@@ -66,26 +66,28 @@ internal sealed class MainForm : Form
     private MenuStrip BuildMenu()
     {
         var menu = new MenuStrip();
-        var file = new ToolStripMenuItem("File");
-        file.DropDownItems.Add("Open data folder", null, (_, _) => OpenDataFolder());
+        var file = new ToolStripMenuItem(Localization.T("MenuFile"));
+        file.DropDownItems.Add(Localization.T("OpenDataFolder"), null, (_, _) => OpenDataFolder());
         file.DropDownItems.Add(new ToolStripSeparator());
-        file.DropDownItems.Add("Close Dashboard", null, (_, _) => Close());
+        file.DropDownItems.Add(Localization.T("CloseDashboard"), null, (_, _) => Close());
 
-        var tools = new ToolStripMenuItem("Tools");
-        tools.DropDownItems.Add("Install / repair startup tasks...", null, (_, _) => Program.RequestStartupInstallation(this));
-        tools.DropDownItems.Add("Start normal Agent now", null, (_, _) => StartHost("AppWatcher.Agent.exe", elevated: false));
-        tools.DropDownItems.Add("Start Elevated helper now...", null, (_, _) => StartHost("AppWatcher.Elevated.exe", elevated: true));
+        var tools = new ToolStripMenuItem(Localization.T("MenuTools"));
+        tools.DropDownItems.Add(Localization.T("Settings"), null, async (_, _) => await OpenSettingsAsync());
         tools.DropDownItems.Add(new ToolStripSeparator());
-        tools.DropDownItems.Add("Create diagnostic package...", null, async (_, _) => await CreateDiagnosticPackageAsync());
-        tools.DropDownItems.Add("Reload configuration", null, async (_, _) => await ReloadHostsAsync());
+        tools.DropDownItems.Add(Localization.T("InstallRepairStartupTasks"), null, (_, _) => Program.RequestStartupInstallation(this));
+        tools.DropDownItems.Add(Localization.T("StartNormalAgentNow"), null, (_, _) => StartHost("AppWatcher.Agent.exe", elevated: false));
+        tools.DropDownItems.Add(Localization.T("StartElevatedHelperNow"), null, (_, _) => StartHost("AppWatcher.Elevated.exe", elevated: true));
+        tools.DropDownItems.Add(new ToolStripSeparator());
+        tools.DropDownItems.Add(Localization.T("CreateDiagnosticPackage"), null, async (_, _) => await CreateDiagnosticPackageAsync());
+        tools.DropDownItems.Add(Localization.T("ReloadConfiguration"), null, async (_, _) => await ReloadHostsAsync());
 
-        var maintenance = new ToolStripMenuItem("Maintenance");
-        maintenance.DropDownItems.Add("Pause all - 15 minutes", null, async (_, _) => await SetGlobalMaintenanceAsync(TimeSpan.FromMinutes(15)));
-        maintenance.DropDownItems.Add("Pause all - 1 hour", null, async (_, _) => await SetGlobalMaintenanceAsync(TimeSpan.FromHours(1)));
-        maintenance.DropDownItems.Add("Pause all - 4 hours", null, async (_, _) => await SetGlobalMaintenanceAsync(TimeSpan.FromHours(4)));
-        maintenance.DropDownItems.Add("Pause all - indefinitely", null, async (_, _) => await SetGlobalMaintenanceAsync(null));
+        var maintenance = new ToolStripMenuItem(Localization.T("MenuMaintenance"));
+        maintenance.DropDownItems.Add(Localization.T("PauseAll15Minutes"), null, async (_, _) => await SetGlobalMaintenanceAsync(TimeSpan.FromMinutes(15)));
+        maintenance.DropDownItems.Add(Localization.T("PauseAll1Hour"), null, async (_, _) => await SetGlobalMaintenanceAsync(TimeSpan.FromHours(1)));
+        maintenance.DropDownItems.Add(Localization.T("PauseAll4Hours"), null, async (_, _) => await SetGlobalMaintenanceAsync(TimeSpan.FromHours(4)));
+        maintenance.DropDownItems.Add(Localization.T("PauseAllIndefinitely"), null, async (_, _) => await SetGlobalMaintenanceAsync(null));
         maintenance.DropDownItems.Add(new ToolStripSeparator());
-        maintenance.DropDownItems.Add("Resume all monitoring", null, async (_, _) => await ResumeGlobalMaintenanceAsync());
+        maintenance.DropDownItems.Add(Localization.T("ResumeAllMonitoring"), null, async (_, _) => await ResumeGlobalMaintenanceAsync());
 
         menu.Items.Add(file);
         menu.Items.Add(tools);
@@ -111,15 +113,15 @@ internal sealed class MainForm : Form
             if (e.RowIndex >= 0) await EditSelectedAsync();
         };
 
-        _grid.Columns.Add(Column("Application", "Application", 190));
-        _grid.Columns.Add(Column("Status", "Status", 105));
-        _grid.Columns.Add(Column("Privilege", "Privilege", 75));
+        _grid.Columns.Add(Column("Application", Localization.T("ColumnApplication"), 190));
+        _grid.Columns.Add(Column("Status", Localization.T("ColumnStatus"), 105));
+        _grid.Columns.Add(Column("Privilege", Localization.T("ColumnPrivilege"), 75));
         _grid.Columns.Add(Column("PID", "PID", 65));
-        _grid.Columns.Add(Column("Uptime", "Uptime", 105));
-        _grid.Columns.Add(Column("Restarts", "Restarts", 70));
-        _grid.Columns.Add(Column("LastEvent", "Last Event", 160));
-        _grid.Columns.Add(Column("Reason", "Reason", 180));
-        var path = Column("Executable", "Executable", 280);
+        _grid.Columns.Add(Column("Uptime", Localization.T("ColumnUptime"), 105));
+        _grid.Columns.Add(Column("Restarts", Localization.T("ColumnRestarts"), 70));
+        _grid.Columns.Add(Column("LastEvent", Localization.T("ColumnLastEvent"), 160));
+        _grid.Columns.Add(Column("Reason", Localization.T("ColumnReason"), 180));
+        var path = Column("Executable", Localization.T("ColumnExecutable"), 280);
         path.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         _grid.Columns.Add(path);
     }
@@ -143,26 +145,26 @@ internal sealed class MainForm : Form
             WrapContents = false
         };
 
-        panel.Controls.Add(Button("Add", async (_, _) => await AddAsync()));
-        panel.Controls.Add(Button("Edit", async (_, _) => await EditSelectedAsync()));
-        panel.Controls.Add(Button("Delete", async (_, _) => await DeleteSelectedAsync()));
+        panel.Controls.Add(Button(Localization.T("ButtonAdd"), async (_, _) => await AddAsync()));
+        panel.Controls.Add(Button(Localization.T("ButtonEdit"), async (_, _) => await EditSelectedAsync()));
+        panel.Controls.Add(Button(Localization.T("ButtonDelete"), async (_, _) => await DeleteSelectedAsync()));
         panel.Controls.Add(Spacer());
-        panel.Controls.Add(Button("Start", async (_, _) => await SendSelectedAsync(SupervisorCommandType.StartApplication)));
-        panel.Controls.Add(Button("Stop", async (_, _) => await SendSelectedAsync(SupervisorCommandType.StopApplication)));
-        panel.Controls.Add(Button("Restart", async (_, _) => await SendSelectedAsync(SupervisorCommandType.RestartApplication)));
+        panel.Controls.Add(Button(Localization.T("ButtonStart"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.StartApplication)));
+        panel.Controls.Add(Button(Localization.T("ButtonStop"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.StopApplication)));
+        panel.Controls.Add(Button(Localization.T("ButtonRestart"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.RestartApplication)));
 
-        var pauseButton = new Button { Text = "Pause ▼", Width = 80, Height = 28 };
+        var pauseButton = new Button { Text = Localization.T("ButtonPause"), AutoSize = true, Height = 28, MinimumSize = new Size(90, 28) };
         var pauseMenu = new ContextMenuStrip();
-        pauseMenu.Items.Add("15 minutes", null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromMinutes(15)));
-        pauseMenu.Items.Add("1 hour", null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(1)));
-        pauseMenu.Items.Add("4 hours", null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(4)));
-        pauseMenu.Items.Add("Indefinitely", null, async (_, _) => await PauseSelectedAsync(null));
+        pauseMenu.Items.Add(Localization.T("Duration15Minutes"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromMinutes(15)));
+        pauseMenu.Items.Add(Localization.T("Duration1Hour"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(1)));
+        pauseMenu.Items.Add(Localization.T("Duration4Hours"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(4)));
+        pauseMenu.Items.Add(Localization.T("DurationIndefinitely"), null, async (_, _) => await PauseSelectedAsync(null));
         pauseButton.Click += (_, _) => pauseMenu.Show(pauseButton, new Point(0, pauseButton.Height));
         panel.Controls.Add(pauseButton);
-        panel.Controls.Add(Button("Resume", async (_, _) => await SendSelectedAsync(SupervisorCommandType.ResumeApplication)));
+        panel.Controls.Add(Button(Localization.T("ButtonResume"), async (_, _) => await SendSelectedAsync(SupervisorCommandType.ResumeApplication)));
         panel.Controls.Add(Spacer());
-        panel.Controls.Add(Button("Logs", (_, _) => new EventLogForm().Show(this)));
-        panel.Controls.Add(Button("Refresh", async (_, _) => await RefreshDashboardAsync()));
+        panel.Controls.Add(Button(Localization.T("ButtonLogs"), (_, _) => new EventLogForm().Show(this)));
+        panel.Controls.Add(Button(Localization.T("ButtonRefresh"), async (_, _) => await RefreshDashboardAsync()));
         return panel;
     }
 
@@ -190,7 +192,7 @@ internal sealed class MainForm : Form
         {
             if (showErrors)
             {
-                MessageBox.Show(this, $"Host executable was not found:\n{path}", "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, Localization.F("HostExecutableNotFound", path), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             return;
         }
@@ -242,13 +244,13 @@ internal sealed class MainForm : Form
             {
                 var rowIndex = _grid.Rows.Add(
                     app.Name,
-                    app.State,
-                    app.Privilege == PrivilegeLevel.Administrator ? "Admin" : "User",
+                    Localization.StateText(app.State),
+                    Localization.PrivilegeText(app.Privilege),
                     app.ProcessId?.ToString() ?? "-",
                     FormatUptime(app.Uptime),
                     app.RestartCountInWindow,
-                    app.LastEvent,
-                    app.LastReason ?? string.Empty,
+                    Localization.EventCode(app.LastEvent),
+                    Localization.ReasonCode(app.LastReason),
                     app.ExecutablePath);
                 var row = _grid.Rows[rowIndex];
                 row.Tag = app;
@@ -259,7 +261,7 @@ internal sealed class MainForm : Form
             var healthy = apps.Count(a => a.State == AppRuntimeState.Healthy);
             var paused = apps.Count(a => a.State == AppRuntimeState.Paused);
             var problems = apps.Count(a => a.State is AppRuntimeState.Failed or AppRuntimeState.Backoff or AppRuntimeState.Unresponsive);
-            _summary.Text = $"Healthy {healthy}    Paused {paused}    Problems {problems}    Total {apps.Count}";
+            _summary.Text = Localization.F("SummaryFormat", healthy, paused, problems, apps.Count);
             UpdateHostStatus(normal.Error, admin.Error);
         }
         finally
@@ -271,12 +273,12 @@ internal sealed class MainForm : Form
     private void UpdateHostStatus(string? normalError, string? adminError)
     {
         var normalText = _normalHost is null
-            ? "Agent: OFFLINE"
-            : $"Agent: PID {_normalHost.HostProcessId}, up {FormatUptime(_normalHost.HostUptime)}, {_normalHost.WorkingSetBytes / 1024d / 1024d:F1} MB";
+            ? Localization.T("AgentOffline")
+            : Localization.F("AgentStatusFormat", _normalHost.HostProcessId, FormatUptime(_normalHost.HostUptime), _normalHost.WorkingSetBytes / 1024d / 1024d);
         var adminText = _adminHost is null
-            ? "Elevated: OFFLINE"
-            : $"Elevated: PID {_adminHost.HostProcessId}, up {FormatUptime(_adminHost.HostUptime)}, {_adminHost.WorkingSetBytes / 1024d / 1024d:F1} MB";
-        var maintenance = (_normalHost?.MaintenanceActive == true || _adminHost?.MaintenanceActive == true) ? "    MAINTENANCE ACTIVE" : string.Empty;
+            ? Localization.T("ElevatedOffline")
+            : Localization.F("ElevatedStatusFormat", _adminHost.HostProcessId, FormatUptime(_adminHost.HostUptime), _adminHost.WorkingSetBytes / 1024d / 1024d);
+        var maintenance = (_normalHost?.MaintenanceActive == true || _adminHost?.MaintenanceActive == true) ? $"    {Localization.T("MaintenanceActive")}" : string.Empty;
         _hostStatus.Text = $"{normalText}    |    {adminText}{maintenance}";
         _hostStatus.ForeColor = _normalHost is null ? Color.DarkRed : maintenance.Length > 0 ? Color.DarkGoldenrod : SystemColors.ControlText;
         _hostStatus.Cursor = Cursors.Hand;
@@ -299,7 +301,7 @@ internal sealed class MainForm : Form
         if (uptime is null) return "-";
         var value = uptime.Value;
         return value.TotalDays >= 1
-            ? $"{(int)value.TotalDays}d {value.Hours:00}:{value.Minutes:00}"
+            ? Localization.F("UptimeDaysFormat", (int)value.TotalDays, value.Hours, value.Minutes)
             : $"{value.Hours:00}:{value.Minutes:00}:{value.Seconds:00}";
     }
 
@@ -344,8 +346,8 @@ internal sealed class MainForm : Form
         var selected = SelectedSnapshot();
         if (selected is null) return;
         if (MessageBox.Show(this,
-                $"Remove '{selected.Name}' from AppWatcher?\n\nThe application itself will not be stopped.",
-                "Remove application",
+                Localization.F("RemoveApplicationPrompt", selected.Name),
+                Localization.T("RemoveApplicationTitle"),
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning,
                 MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
@@ -373,7 +375,7 @@ internal sealed class MainForm : Form
         if (!response.Success)
         {
             MessageBox.Show(this,
-                $"Command failed for {selected.Name}.\n\n{response.Error}",
+                Localization.F("CommandFailed", selected.Name, response.Error),
                 "AppWatcher",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
@@ -412,13 +414,20 @@ internal sealed class MainForm : Form
         await RefreshDashboardAsync();
     }
 
+    private async Task OpenSettingsAsync()
+    {
+        using var settings = new SettingsForm();
+        settings.ShowDialog(this);
+        await RefreshDashboardAsync();
+    }
+
     private async Task CreateDiagnosticPackageAsync()
     {
         using var dialog = new SaveFileDialog
         {
-            Filter = "ZIP archive (*.zip)|*.zip",
+            Filter = Localization.T("ZipFilter"),
             FileName = $"AppWatcher-Diagnostics-{DateTime.Now:yyyyMMdd-HHmmss}.zip",
-            Title = "Save AppWatcher diagnostic package"
+            Title = Localization.T("SaveDiagnosticPackageTitle")
         };
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
@@ -426,11 +435,11 @@ internal sealed class MainForm : Form
         {
             var builder = new DiagnosticPackageBuilder(_configService);
             await builder.CreateAsync(dialog.FileName, _normalHost, _adminHost);
-            MessageBox.Show(this, "Diagnostic package created successfully.", "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, Localization.T("DiagnosticPackageCreated"), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "Diagnostic package failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, ex.Message, Localization.T("DiagnosticPackageFailed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

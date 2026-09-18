@@ -15,7 +15,7 @@ internal sealed class EventLogForm : Form
 
     public EventLogForm()
     {
-        Text = "AppWatcher Event Log";
+        Text = Localization.T("EventLogTitle");
         StartPosition = FormStartPosition.CenterParent;
         Width = 1050;
         Height = 650;
@@ -28,21 +28,27 @@ internal sealed class EventLogForm : Form
             Padding = new Padding(6),
             WrapContents = false
         };
-        filter.Controls.Add(new Label { Text = "Application:", AutoSize = true, Margin = new Padding(3, 7, 3, 0) });
+        filter.Controls.Add(new Label { Text = Localization.T("LabelApplication"), AutoSize = true, Margin = new Padding(3, 7, 3, 0) });
         _appFilter.Width = 180;
         filter.Controls.Add(_appFilter);
-        filter.Controls.Add(new Label { Text = "Level:", AutoSize = true, Margin = new Padding(12, 7, 3, 0) });
+        filter.Controls.Add(new Label { Text = Localization.T("LabelLevel"), AutoSize = true, Margin = new Padding(12, 7, 3, 0) });
         _level.DropDownStyle = ComboBoxStyle.DropDownList;
-        _level.Items.Add("All");
-        _level.Items.AddRange(Enum.GetNames<AppLogLevel>());
+        _level.Items.Add(new LocalizedOption<AppLogLevel?>(null, Localization.T("All")));
+        foreach (var value in Enum.GetValues<AppLogLevel>())
+        {
+            _level.Items.Add(new LocalizedOption<AppLogLevel?>(value, Localization.LogLevelText(value)));
+        }
         _level.SelectedIndex = 0;
         filter.Controls.Add(_level);
-        filter.Controls.Add(new Label { Text = "Period:", AutoSize = true, Margin = new Padding(12, 7, 3, 0) });
+        filter.Controls.Add(new Label { Text = Localization.T("LabelPeriod"), AutoSize = true, Margin = new Padding(12, 7, 3, 0) });
         _period.DropDownStyle = ComboBoxStyle.DropDownList;
-        _period.Items.AddRange(new object[] { "24 hours", "7 days", "30 days", "All" });
+        _period.Items.Add(new LocalizedOption<TimeSpan?>(TimeSpan.FromHours(24), Localization.T("Period24Hours")));
+        _period.Items.Add(new LocalizedOption<TimeSpan?>(TimeSpan.FromDays(7), Localization.T("Period7Days")));
+        _period.Items.Add(new LocalizedOption<TimeSpan?>(TimeSpan.FromDays(30), Localization.T("Period30Days")));
+        _period.Items.Add(new LocalizedOption<TimeSpan?>(null, Localization.T("All")));
         _period.SelectedIndex = 0;
         filter.Controls.Add(_period);
-        var refresh = new Button { Text = "Refresh", AutoSize = true, Margin = new Padding(12, 2, 3, 0) };
+        var refresh = new Button { Text = Localization.T("ButtonRefresh"), AutoSize = true, Margin = new Padding(12, 2, 3, 0) };
         refresh.Click += async (_, _) => await RefreshAsync();
         filter.Controls.Add(refresh);
         Controls.Add(filter);
@@ -77,29 +83,19 @@ internal sealed class EventLogForm : Form
         _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _grid.MultiSelect = false;
         _grid.AutoGenerateColumns = false;
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Time", HeaderText = "Time", Width = 160 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "App", HeaderText = "Application", Width = 180 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Level", HeaderText = "Level", Width = 90 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Event", HeaderText = "Event", Width = 180 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Reason", HeaderText = "Reason", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Time", HeaderText = Localization.T("ColumnTime"), Width = 160 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "App", HeaderText = Localization.T("ColumnApplication"), Width = 180 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Level", HeaderText = Localization.T("ColumnLevel"), Width = 90 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Event", HeaderText = Localization.T("ColumnEvent"), Width = 180 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Reason", HeaderText = Localization.T("ColumnReason"), AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
         _grid.SelectionChanged += (_, _) => ShowSelectedDetails();
     }
 
     private async Task RefreshAsync()
     {
-        AppLogLevel? minimum = null;
-        if (_level.SelectedIndex > 0 && Enum.TryParse<AppLogLevel>(_level.SelectedItem?.ToString(), out var parsed))
-        {
-            minimum = parsed;
-        }
-
-        DateTimeOffset? since = _period.SelectedItem?.ToString() switch
-        {
-            "24 hours" => DateTimeOffset.UtcNow.AddHours(-24),
-            "7 days" => DateTimeOffset.UtcNow.AddDays(-7),
-            "30 days" => DateTimeOffset.UtcNow.AddDays(-30),
-            _ => null
-        };
+        var minimum = (_level.SelectedItem as LocalizedOption<AppLogLevel?>)?.Value;
+        var period = (_period.SelectedItem as LocalizedOption<TimeSpan?>)?.Value;
+        var since = period is null ? (DateTimeOffset?)null : DateTimeOffset.UtcNow - period.Value;
 
         try
         {
@@ -108,7 +104,7 @@ internal sealed class EventLogForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "Could not read event log", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, ex.Message, Localization.T("CouldNotReadEventLog"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -124,10 +120,10 @@ internal sealed class EventLogForm : Form
         {
             var index = _grid.Rows.Add(
                 record.TimestampUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"),
-                record.ApplicationName ?? "(host)",
-                record.Level,
-                record.EventType,
-                record.ReasonCode);
+                record.ApplicationName ?? Localization.T("HostLabel"),
+                Localization.LogLevelText(record.Level),
+                Localization.EventCode(record.EventType),
+                Localization.ReasonCode(record.ReasonCode));
             _grid.Rows[index].Tag = record;
         }
         ShowSelectedDetails();
@@ -152,11 +148,14 @@ internal sealed class EventLogForm : Form
             formattedDetails = record.DetailsJson;
         }
 
-        _details.Text = $"Timestamp : {record.TimestampUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss.fff zzz}\r\n" +
-                        $"Application: {record.ApplicationName ?? "(host)"}\r\n" +
-                        $"Level     : {record.Level}\r\n" +
-                        $"Event     : {record.EventType}\r\n" +
-                        $"Reason    : {record.ReasonCode}\r\n\r\n" +
-                        formattedDetails;
+        _details.Text =
+            $"{Localization.T("DetailTimestamp"),-12}: {record.TimestampUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss.fff zzz}\r\n" +
+            $"{Localization.T("DetailApplication"),-12}: {record.ApplicationName ?? Localization.T("HostLabel")}\r\n" +
+            $"{Localization.T("DetailLevel"),-12}: {Localization.LogLevelText(record.Level)}\r\n" +
+            $"{Localization.T("DetailEvent"),-12}: {Localization.EventCode(record.EventType)}\r\n" +
+            $"{Localization.T("DetailReason"),-12}: {Localization.ReasonCode(record.ReasonCode)}\r\n" +
+            $"{Localization.T("DetailEventCode"),-12}: {record.EventType}\r\n" +
+            $"{Localization.T("DetailReasonCode"),-12}: {record.ReasonCode}\r\n\r\n" +
+            formattedDetails;
     }
 }

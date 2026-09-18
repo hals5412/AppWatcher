@@ -8,8 +8,11 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
-        ApplicationConfiguration.Initialize();
         AppPaths.EnsureDataDirectory();
+        var configService = new ConfigService();
+        var config = configService.LoadAsync().GetAwaiter().GetResult();
+        Localization.Apply(config.Global.Language);
+        ApplicationConfiguration.Initialize();
 
         if (args.Any(a => string.Equals(a, "--install-startup", StringComparison.OrdinalIgnoreCase)))
         {
@@ -41,7 +44,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            MessageBox.Show(owner, ex.Message, "AppWatcher startup setup", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(owner, ex.Message, Localization.T("StartupSetupTitle"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -50,13 +53,13 @@ internal static class Program
         try
         {
             var result = TaskSchedulerInstaller.InstallAndStart();
-            MessageBox.Show(result, "AppWatcher startup setup", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(result, Localization.T("StartupSetupTitle"), MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
             MessageBox.Show(
-                $"Startup task installation failed.\n\n{ex}",
-                "AppWatcher startup setup",
+                Localization.F("StartupInstallFailed", ex),
+                Localization.T("StartupSetupTitle"),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }

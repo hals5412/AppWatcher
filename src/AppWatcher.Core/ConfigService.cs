@@ -79,37 +79,37 @@ public sealed class ConfigService
 
         if (string.IsNullOrWhiteSpace(definition.Name))
         {
-            messages.Add("Application name is required.");
+            messages.Add(Localization.T("ValidationApplicationNameRequired"));
         }
 
         if (string.IsNullOrWhiteSpace(definition.ExecutablePath))
         {
-            messages.Add("Executable path is required.");
+            messages.Add(Localization.T("ValidationExecutablePathRequired"));
         }
         else if (!File.Exists(definition.ExecutablePath))
         {
-            messages.Add($"Executable does not exist: {definition.ExecutablePath}");
+            messages.Add(Localization.F("ValidationExecutableMissing", definition.ExecutablePath));
         }
 
         if (!string.IsNullOrWhiteSpace(definition.WorkingDirectory) && !Directory.Exists(definition.WorkingDirectory))
         {
-            messages.Add($"Working directory does not exist: {definition.WorkingDirectory}");
+            messages.Add(Localization.F("ValidationWorkingDirectoryMissing", definition.WorkingDirectory));
         }
 
         if (definition.RestartDelaySeconds < 0)
         {
-            messages.Add("Restart delay cannot be negative.");
+            messages.Add(Localization.T("ValidationRestartDelayNegative"));
         }
 
         if (definition.DetectHangs)
         {
             if (definition.HangCheckIntervalSeconds < 1)
             {
-                messages.Add("Hang check interval must be at least 1 second.");
+                messages.Add(Localization.T("ValidationHangInterval"));
             }
             if (definition.HangTimeoutSeconds < definition.HangCheckIntervalSeconds)
             {
-                messages.Add("Hang timeout must be greater than or equal to the hang check interval.");
+                messages.Add(Localization.T("ValidationHangTimeout"));
             }
         }
 
@@ -117,11 +117,11 @@ public sealed class ConfigService
         {
             if (definition.MaxRestarts < 1)
             {
-                messages.Add("Maximum restarts must be at least 1.");
+                messages.Add(Localization.T("ValidationMaxRestarts"));
             }
             if (definition.RestartWindowMinutes < 1 || definition.BackoffMinutes < 1)
             {
-                messages.Add("Restart window and backoff must be at least 1 minute.");
+                messages.Add(Localization.T("ValidationRestartWindowBackoff"));
             }
         }
 

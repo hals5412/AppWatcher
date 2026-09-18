@@ -2,7 +2,7 @@
 
 AppWatcher is a lightweight Windows supervisor for long-running desktop applications. It is designed for applications such as **TVRock**, **TVTest**, Libre Hardware Monitor, recording utilities, and other software that should normally stay running.
 
-> Status: **v0.1.0-alpha / first implementation**. The core architecture is in place, but this version still needs Windows build/runtime testing before it should replace an existing watchdog in production.
+> Status: **v0.1.0-alpha.2 / localization build**. The core architecture is in place, but this version still needs Windows build/runtime testing before it should replace an existing watchdog in production.
 
 ## Design goals
 
@@ -51,6 +51,22 @@ The Agent and Elevated helper run in the **interactive logged-on user session**.
 - Event log viewer.
 - Diagnostic ZIP creation with obvious secret-like command-line arguments masked.
 - Task Scheduler setup for normal and highest-privilege startup at user logon.
+- Japanese and English UI with automatic Windows display-language selection.
+
+
+## Language
+
+AppWatcher supports **Japanese** and **English**. The default is `Auto`, which follows the Windows display language (Japanese Windows uses Japanese; other languages currently fall back to English).
+
+The language can be changed from **Tools → Settings...**. The setting is stored as `global.uiLanguage` in `config.json` with one of these values:
+
+```text
+Auto
+Japanese
+English
+```
+
+Internal state names, event codes, and reason codes remain language-neutral so logs and diagnostics stay machine-readable. The event log shows localized descriptions while preserving the original codes in the details pane.
 
 ## Important compatibility behavior
 
@@ -146,6 +162,6 @@ On Windows session-ending notification, AppWatcher marks shutdown in progress an
 - TCP/HTTP health checks are not yet implemented.
 - Per-target CPU/RAM history is not collected. This is intentional until the overhead model is measured.
 - Update checking is intentionally disabled by default and is not implemented in this alpha.
-- The project has not yet been compiled in CI at the time this source bundle was generated; the first GitHub Actions run is expected to catch any environment-specific build issue.
+- Language changes require the Agent/dashboard to be restarted before every component uses the new language.
 
 See [`docs/specification.md`](docs/specification.md), [`docs/architecture.md`](docs/architecture.md), and [`docs/manual-test-plan.md`](docs/manual-test-plan.md).

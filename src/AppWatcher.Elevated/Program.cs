@@ -10,10 +10,11 @@ internal static class Program
         using var guard = new SingleInstanceGuard("Elevated");
         if (!guard.IsOwner) return;
 
-        ApplicationConfiguration.Initialize();
         AppPaths.EnsureDataDirectory();
-
         var config = new ConfigService();
+        var loadedConfig = config.LoadAsync().GetAwaiter().GetResult();
+        Localization.Apply(loadedConfig.Global.Language);
+        ApplicationConfiguration.Initialize();
         var eventStore = new EventStore();
         var engine = new SupervisorEngine(PrivilegeLevel.Administrator, config, eventStore);
         var pipeServer = new SupervisorPipeServer(engine);

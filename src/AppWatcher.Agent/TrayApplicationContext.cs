@@ -15,23 +15,23 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _engine = engine;
 
         var menu = new ContextMenuStrip();
-        menu.Items.Add("Open Dashboard", null, (_, _) => OpenDashboard());
+        menu.Items.Add(Localization.T("TrayOpenDashboard"), null, (_, _) => OpenDashboard());
         menu.Items.Add(new ToolStripSeparator());
 
-        var pause = new ToolStripMenuItem("Pause all monitoring");
-        pause.DropDownItems.Add("15 minutes", null, async (_, _) => await SetMaintenanceAsync(TimeSpan.FromMinutes(15)));
-        pause.DropDownItems.Add("1 hour", null, async (_, _) => await SetMaintenanceAsync(TimeSpan.FromHours(1)));
-        pause.DropDownItems.Add("4 hours", null, async (_, _) => await SetMaintenanceAsync(TimeSpan.FromHours(4)));
-        pause.DropDownItems.Add("Indefinitely", null, async (_, _) => await SetMaintenanceAsync(null));
+        var pause = new ToolStripMenuItem(Localization.T("TrayPauseAllMonitoring"));
+        pause.DropDownItems.Add(Localization.T("Duration15Minutes"), null, async (_, _) => await SetMaintenanceAsync(TimeSpan.FromMinutes(15)));
+        pause.DropDownItems.Add(Localization.T("Duration1Hour"), null, async (_, _) => await SetMaintenanceAsync(TimeSpan.FromHours(1)));
+        pause.DropDownItems.Add(Localization.T("Duration4Hours"), null, async (_, _) => await SetMaintenanceAsync(TimeSpan.FromHours(4)));
+        pause.DropDownItems.Add(Localization.T("DurationIndefinitely"), null, async (_, _) => await SetMaintenanceAsync(null));
         menu.Items.Add(pause);
-        menu.Items.Add("Resume all monitoring", null, async (_, _) => await ResumeMaintenanceAsync());
+        menu.Items.Add(Localization.T("TrayResumeAllMonitoring"), null, async (_, _) => await ResumeMaintenanceAsync());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Exit AppWatcher Agent", null, (_, _) => ExitAgent());
+        menu.Items.Add(Localization.T("TrayExitAgent"), null, (_, _) => ExitAgent());
 
         _notifyIcon = new NotifyIcon
         {
             Icon = SystemIcons.Application,
-            Text = "AppWatcher - Monitoring",
+            Text = Localization.T("TrayMonitoring"),
             ContextMenuStrip = menu,
             Visible = true
         };
@@ -54,7 +54,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Could not pause monitoring.\n\n{ex.Message}", "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(Localization.F("CouldNotPauseMonitoring", ex.Message), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -67,7 +67,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Could not resume monitoring.\n\n{ex.Message}", "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(Localization.F("CouldNotResumeMonitoring", ex.Message), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -80,22 +80,22 @@ internal sealed class TrayApplicationContext : ApplicationContext
         if (snapshot.MaintenanceActive)
         {
             _notifyIcon.Icon = SystemIcons.Warning;
-            _notifyIcon.Text = Truncate("AppWatcher - Maintenance mode");
+            _notifyIcon.Text = Truncate(Localization.T("TrayMaintenanceMode"));
         }
         else if (problemCount > 0)
         {
             _notifyIcon.Icon = SystemIcons.Error;
-            _notifyIcon.Text = Truncate($"AppWatcher - {problemCount} problem(s)");
+            _notifyIcon.Text = Truncate(Localization.F("TrayProblems", problemCount));
         }
         else if (pausedCount > 0)
         {
             _notifyIcon.Icon = SystemIcons.Information;
-            _notifyIcon.Text = Truncate($"AppWatcher - {pausedCount} paused");
+            _notifyIcon.Text = Truncate(Localization.F("TrayPaused", pausedCount));
         }
         else
         {
             _notifyIcon.Icon = SystemIcons.Application;
-            _notifyIcon.Text = Truncate($"AppWatcher - {snapshot.Applications.Count} monitored");
+            _notifyIcon.Text = Truncate(Localization.F("TrayMonitored", snapshot.Applications.Count));
         }
     }
 
@@ -107,7 +107,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         if (!File.Exists(uiPath))
         {
             MessageBox.Show(
-                $"Dashboard executable was not found next to the Agent.\n\nExpected:\n{uiPath}",
+                Localization.F("DashboardNotFound", uiPath),
                 "AppWatcher",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
@@ -125,7 +125,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Could not open the dashboard.\n\n{ex.Message}", "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(Localization.F("CouldNotOpenDashboard", ex.Message), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -137,8 +137,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private void ExitAgent()
     {
         var result = MessageBox.Show(
-            "Stop AppWatcher monitoring?\n\nManaged applications will be left running.",
-            "Exit AppWatcher Agent",
+            Localization.T("ExitAgentPrompt"),
+            Localization.T("ExitAgentTitle"),
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning,
             MessageBoxDefaultButton.Button2);

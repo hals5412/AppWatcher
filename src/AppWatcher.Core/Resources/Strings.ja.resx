@@ -1,0 +1,707 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AgentOffline" xml:space="preserve">
+    <value>Agent: オフライン</value>
+  </data>
+  <data name="AgentStatusFormat" xml:space="preserve">
+    <value>Agent: PID {0} / 稼働 {1} / {2:F1} MB</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>すべて</value>
+  </data>
+  <data name="ApplicationsFilter" xml:space="preserve">
+    <value>アプリケーション (*.exe)|*.exe|すべてのファイル (*.*)|*.*</value>
+  </data>
+  <data name="AttachExisting" xml:space="preserve">
+    <value>既に起動している場合はそのプロセスを監視する</value>
+  </data>
+  <data name="ButtonAdd" xml:space="preserve">
+    <value>追加</value>
+  </data>
+  <data name="ButtonCancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="ButtonDelete" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="ButtonEdit" xml:space="preserve">
+    <value>編集</value>
+  </data>
+  <data name="ButtonLogs" xml:space="preserve">
+    <value>ログ</value>
+  </data>
+  <data name="ButtonPause" xml:space="preserve">
+    <value>監視停止 ▼</value>
+  </data>
+  <data name="ButtonRefresh" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="ButtonRestart" xml:space="preserve">
+    <value>再起動</value>
+  </data>
+  <data name="ButtonResume" xml:space="preserve">
+    <value>監視再開</value>
+  </data>
+  <data name="ButtonSave" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="ButtonStart" xml:space="preserve">
+    <value>起動</value>
+  </data>
+  <data name="ButtonStop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="ButtonValidate" xml:space="preserve">
+    <value>設定を確認</value>
+  </data>
+  <data name="CannotSave" xml:space="preserve">
+    <value>保存できません</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>アップデートを確認する</value>
+  </data>
+  <data name="ChildProcessPolicyInfo" xml:space="preserve">
+    <value>推奨: 子プロセスは管理しない。TVRockからTVTestなどのGUIアプリを起動する構成との互換性を保ちます。</value>
+  </data>
+  <data name="ChildProcessPolicy_StopWithParent" xml:space="preserve">
+    <value>親と一緒に停止</value>
+  </data>
+  <data name="ChildProcessPolicy_TrackOnly" xml:space="preserve">
+    <value>追跡のみ</value>
+  </data>
+  <data name="ChildProcessPolicy_Unmanaged" xml:space="preserve">
+    <value>管理しない</value>
+  </data>
+  <data name="CloseDashboard" xml:space="preserve">
+    <value>ダッシュボードを閉じる</value>
+  </data>
+  <data name="ColumnApplication" xml:space="preserve">
+    <value>アプリ</value>
+  </data>
+  <data name="ColumnEvent" xml:space="preserve">
+    <value>イベント</value>
+  </data>
+  <data name="ColumnExecutable" xml:space="preserve">
+    <value>実行ファイル</value>
+  </data>
+  <data name="ColumnLastEvent" xml:space="preserve">
+    <value>最終イベント</value>
+  </data>
+  <data name="ColumnLevel" xml:space="preserve">
+    <value>レベル</value>
+  </data>
+  <data name="ColumnPid" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="ColumnPrivilege" xml:space="preserve">
+    <value>権限</value>
+  </data>
+  <data name="ColumnReason" xml:space="preserve">
+    <value>理由</value>
+  </data>
+  <data name="ColumnRestarts" xml:space="preserve">
+    <value>再起動回数</value>
+  </data>
+  <data name="ColumnStatus" xml:space="preserve">
+    <value>状態</value>
+  </data>
+  <data name="ColumnTime" xml:space="preserve">
+    <value>時刻</value>
+  </data>
+  <data name="ColumnUptime" xml:space="preserve">
+    <value>稼働時間</value>
+  </data>
+  <data name="CommandFailed" xml:space="preserve">
+    <value>{0} への操作に失敗しました。
+
+{1}</value>
+  </data>
+  <data name="ConfigurationValid" xml:space="preserve">
+    <value>設定に問題はありません。</value>
+  </data>
+  <data name="ConfigurationValidation" xml:space="preserve">
+    <value>設定チェック</value>
+  </data>
+  <data name="CouldNotOpenDashboard" xml:space="preserve">
+    <value>ダッシュボードを開けませんでした。
+
+{0}</value>
+  </data>
+  <data name="CouldNotPauseMonitoring" xml:space="preserve">
+    <value>監視を一時停止できませんでした。
+
+{0}</value>
+  </data>
+  <data name="CouldNotReadEventLog" xml:space="preserve">
+    <value>イベントログを読み込めませんでした</value>
+  </data>
+  <data name="CouldNotResumeMonitoring" xml:space="preserve">
+    <value>監視を再開できませんでした。
+
+{0}</value>
+  </data>
+  <data name="CreateDiagnosticPackage" xml:space="preserve">
+    <value>診断パッケージを作成...</value>
+  </data>
+  <data name="DashboardNotFound" xml:space="preserve">
+    <value>Agentと同じフォルダーにダッシュボード実行ファイルが見つかりません。
+
+想定パス:
+{0}</value>
+  </data>
+  <data name="DetailApplication" xml:space="preserve">
+    <value>アプリ</value>
+  </data>
+  <data name="DetailEvent" xml:space="preserve">
+    <value>イベント</value>
+  </data>
+  <data name="DetailEventCode" xml:space="preserve">
+    <value>イベントコード</value>
+  </data>
+  <data name="DetailLevel" xml:space="preserve">
+    <value>レベル</value>
+  </data>
+  <data name="DetailReason" xml:space="preserve">
+    <value>理由</value>
+  </data>
+  <data name="DetailReasonCode" xml:space="preserve">
+    <value>理由コード</value>
+  </data>
+  <data name="DetailTimestamp" xml:space="preserve">
+    <value>日時</value>
+  </data>
+  <data name="DetectUnresponsiveWindow" xml:space="preserve">
+    <value>GUIの応答なしを検出する</value>
+  </data>
+  <data name="DiagnosticPackageCreated" xml:space="preserve">
+    <value>診断パッケージを作成しました。</value>
+  </data>
+  <data name="DiagnosticPackageFailed" xml:space="preserve">
+    <value>診断パッケージの作成に失敗しました</value>
+  </data>
+  <data name="Duration15Minutes" xml:space="preserve">
+    <value>15分</value>
+  </data>
+  <data name="Duration1Hour" xml:space="preserve">
+    <value>1時間</value>
+  </data>
+  <data name="Duration4Hours" xml:space="preserve">
+    <value>4時間</value>
+  </data>
+  <data name="DurationIndefinitely" xml:space="preserve">
+    <value>無期限</value>
+  </data>
+  <data name="ElevatedOffline" xml:space="preserve">
+    <value>管理者Helper: オフライン</value>
+  </data>
+  <data name="ElevatedStatusFormat" xml:space="preserve">
+    <value>管理者Helper: PID {0} / 稼働 {1} / {2:F1} MB</value>
+  </data>
+  <data name="EnableRestartLoopProtection" xml:space="preserve">
+    <value>再起動ループ防止を有効にする</value>
+  </data>
+  <data name="EventDatabaseMaxMb" xml:space="preserve">
+    <value>イベントDB最大サイズ（MB）</value>
+  </data>
+  <data name="EventLogTitle" xml:space="preserve">
+    <value>AppWatcher イベントログ</value>
+  </data>
+  <data name="EventRetentionDays" xml:space="preserve">
+    <value>イベント保存期間（日）</value>
+  </data>
+  <data name="Event_ApplicationPaused" xml:space="preserve">
+    <value>監視停止</value>
+  </data>
+  <data name="Event_Attached" xml:space="preserve">
+    <value>既存プロセスへ接続</value>
+  </data>
+  <data name="Event_ConfigurationReloaded" xml:space="preserve">
+    <value>設定再読み込み</value>
+  </data>
+  <data name="Event_HangDetected" xml:space="preserve">
+    <value>応答なし検出</value>
+  </data>
+  <data name="Event_HostStarted" xml:space="preserve">
+    <value>ホスト起動</value>
+  </data>
+  <data name="Event_HostStopped" xml:space="preserve">
+    <value>ホスト停止</value>
+  </data>
+  <data name="Event_MaintenanceEnded" xml:space="preserve">
+    <value>メンテナンス終了</value>
+  </data>
+  <data name="Event_MaintenanceStarted" xml:space="preserve">
+    <value>メンテナンス開始</value>
+  </data>
+  <data name="Event_MonitoringResumed" xml:space="preserve">
+    <value>監視再開</value>
+  </data>
+  <data name="Event_ProcessExited" xml:space="preserve">
+    <value>プロセス終了</value>
+  </data>
+  <data name="Event_ProcessForceKilled" xml:space="preserve">
+    <value>プロセス強制終了</value>
+  </data>
+  <data name="Event_ProcessStartFailed" xml:space="preserve">
+    <value>プロセス起動失敗</value>
+  </data>
+  <data name="Event_ProcessStartRequested" xml:space="preserve">
+    <value>プロセス起動要求</value>
+  </data>
+  <data name="Event_ProcessStarted" xml:space="preserve">
+    <value>プロセス起動</value>
+  </data>
+  <data name="Event_ProcessStopFailed" xml:space="preserve">
+    <value>プロセス停止失敗</value>
+  </data>
+  <data name="Event_ProcessStopRequested" xml:space="preserve">
+    <value>プロセス停止要求</value>
+  </data>
+  <data name="Event_RestartDecision" xml:space="preserve">
+    <value>再起動判定</value>
+  </data>
+  <data name="Event_RestartScheduled" xml:space="preserve">
+    <value>再起動予約</value>
+  </data>
+  <data name="Event_RestartSuppressed" xml:space="preserve">
+    <value>再起動抑止</value>
+  </data>
+  <data name="Event_WindowResponsiveAgain" xml:space="preserve">
+    <value>ウィンドウ応答復帰</value>
+  </data>
+  <data name="Event_WindowUnresponsiveObserved" xml:space="preserve">
+    <value>ウィンドウ応答なし</value>
+  </data>
+  <data name="ExitAgentPrompt" xml:space="preserve">
+    <value>AppWatcherの監視を停止しますか？
+
+監視対象アプリは起動したまま残します。</value>
+  </data>
+  <data name="ExitAgentTitle" xml:space="preserve">
+    <value>AppWatcher Agentを終了</value>
+  </data>
+  <data name="FieldArguments" xml:space="preserve">
+    <value>引数</value>
+  </data>
+  <data name="FieldBackoffMinutes" xml:space="preserve">
+    <value>再起動待機時間（分）</value>
+  </data>
+  <data name="FieldChildProcessPolicy" xml:space="preserve">
+    <value>子プロセスの扱い</value>
+  </data>
+  <data name="FieldExecutable" xml:space="preserve">
+    <value>実行ファイル</value>
+  </data>
+  <data name="FieldGracefulShutdownTimeout" xml:space="preserve">
+    <value>通常終了の待機時間（秒）</value>
+  </data>
+  <data name="FieldHangCheckIntervalSeconds" xml:space="preserve">
+    <value>応答確認間隔（秒）</value>
+  </data>
+  <data name="FieldHangTimeoutSeconds" xml:space="preserve">
+    <value>応答なし判定時間（秒）</value>
+  </data>
+  <data name="FieldHealthyResetMinutes" xml:space="preserve">
+    <value>正常稼働で回数リセット（分）</value>
+  </data>
+  <data name="FieldLogLevel" xml:space="preserve">
+    <value>ログレベル</value>
+  </data>
+  <data name="FieldMaxRestarts" xml:space="preserve">
+    <value>最大再起動回数</value>
+  </data>
+  <data name="FieldName" xml:space="preserve">
+    <value>名前</value>
+  </data>
+  <data name="FieldPrivilege" xml:space="preserve">
+    <value>実行権限</value>
+  </data>
+  <data name="FieldRestartDelaySeconds" xml:space="preserve">
+    <value>再起動までの待機時間（秒）</value>
+  </data>
+  <data name="FieldRestartPolicy" xml:space="preserve">
+    <value>終了時の動作</value>
+  </data>
+  <data name="FieldStartupGraceSeconds" xml:space="preserve">
+    <value>起動直後の猶予時間（秒）</value>
+  </data>
+  <data name="FieldWithinMinutes" xml:space="preserve">
+    <value>判定時間（分）</value>
+  </data>
+  <data name="FieldWorkingDirectory" xml:space="preserve">
+    <value>作業フォルダー</value>
+  </data>
+  <data name="ForceTerminateAfterTimeout" xml:space="preserve">
+    <value>通常終了できない場合は強制終了する</value>
+  </data>
+  <data name="HostExecutableNotFound" xml:space="preserve">
+    <value>ホスト実行ファイルが見つかりません:
+{0}</value>
+  </data>
+  <data name="HostLabel" xml:space="preserve">
+    <value>(ホスト)</value>
+  </data>
+  <data name="InstallRepairStartupTasks" xml:space="preserve">
+    <value>自動起動タスクをインストール／修復...</value>
+  </data>
+  <data name="InteractiveLaunchInfo" xml:space="preserve">
+    <value>起動方式: 対話型デスクトップ（通常のWindows GUI起動）。対象アプリをSession 0やJob Objectへ移しません。</value>
+  </data>
+  <data name="LabelApplication" xml:space="preserve">
+    <value>アプリ:</value>
+  </data>
+  <data name="LabelLevel" xml:space="preserve">
+    <value>レベル:</value>
+  </data>
+  <data name="LabelPeriod" xml:space="preserve">
+    <value>期間:</value>
+  </data>
+  <data name="LanguageAuto" xml:space="preserve">
+    <value>自動（Windowsの表示言語）</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageJapanese" xml:space="preserve">
+    <value>日本語</value>
+  </data>
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>言語</value>
+  </data>
+  <data name="LogLevel_Critical" xml:space="preserve">
+    <value>重大</value>
+  </data>
+  <data name="LogLevel_Debug" xml:space="preserve">
+    <value>デバッグ</value>
+  </data>
+  <data name="LogLevel_Error" xml:space="preserve">
+    <value>エラー</value>
+  </data>
+  <data name="LogLevel_Information" xml:space="preserve">
+    <value>情報</value>
+  </data>
+  <data name="LogLevel_Trace" xml:space="preserve">
+    <value>トレース</value>
+  </data>
+  <data name="LogLevel_Warning" xml:space="preserve">
+    <value>警告</value>
+  </data>
+  <data name="MaintenanceActive" xml:space="preserve">
+    <value>メンテナンス中</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>ファイル</value>
+  </data>
+  <data name="MenuMaintenance" xml:space="preserve">
+    <value>メンテナンス</value>
+  </data>
+  <data name="MenuTools" xml:space="preserve">
+    <value>ツール</value>
+  </data>
+  <data name="MonitoringEnabled" xml:space="preserve">
+    <value>監視を有効にする</value>
+  </data>
+  <data name="OpenDataFolder" xml:space="preserve">
+    <value>データフォルダーを開く</value>
+  </data>
+  <data name="PauseAll15Minutes" xml:space="preserve">
+    <value>全監視を15分停止</value>
+  </data>
+  <data name="PauseAll1Hour" xml:space="preserve">
+    <value>全監視を1時間停止</value>
+  </data>
+  <data name="PauseAll4Hours" xml:space="preserve">
+    <value>全監視を4時間停止</value>
+  </data>
+  <data name="PauseAllIndefinitely" xml:space="preserve">
+    <value>全監視を無期限停止</value>
+  </data>
+  <data name="Period24Hours" xml:space="preserve">
+    <value>24時間</value>
+  </data>
+  <data name="Period30Days" xml:space="preserve">
+    <value>30日</value>
+  </data>
+  <data name="Period7Days" xml:space="preserve">
+    <value>7日</value>
+  </data>
+  <data name="Privilege_Administrator" xml:space="preserve">
+    <value>管理者</value>
+  </data>
+  <data name="Privilege_Normal" xml:space="preserve">
+    <value>通常</value>
+  </data>
+  <data name="Reason_AutomaticRestart" xml:space="preserve">
+    <value>自動再起動</value>
+  </data>
+  <data name="Reason_BackoffActive" xml:space="preserve">
+    <value>再起動待機中</value>
+  </data>
+  <data name="Reason_BackoffExpired" xml:space="preserve">
+    <value>再起動待機終了</value>
+  </data>
+  <data name="Reason_ExistingProcessAttached" xml:space="preserve">
+    <value>既存プロセスへ接続</value>
+  </data>
+  <data name="Reason_GlobalMaintenance" xml:space="preserve">
+    <value>全体メンテナンス中</value>
+  </data>
+  <data name="Reason_HangTimeoutExceeded" xml:space="preserve">
+    <value>応答なし時間超過</value>
+  </data>
+  <data name="Reason_IntentionalStop" xml:space="preserve">
+    <value>意図的な停止</value>
+  </data>
+  <data name="Reason_ManualRestart" xml:space="preserve">
+    <value>手動再起動</value>
+  </data>
+  <data name="Reason_ManualStart" xml:space="preserve">
+    <value>手動起動</value>
+  </data>
+  <data name="Reason_ManualStop" xml:space="preserve">
+    <value>手動停止</value>
+  </data>
+  <data name="Reason_MonitoringDisabled" xml:space="preserve">
+    <value>監視が無効</value>
+  </data>
+  <data name="Reason_MonitoringPaused" xml:space="preserve">
+    <value>監視が一時停止中</value>
+  </data>
+  <data name="Reason_RecoveredBeforeTimeout" xml:space="preserve">
+    <value>タイムアウト前に応答復帰</value>
+  </data>
+  <data name="Reason_RestartAllowed" xml:space="preserve">
+    <value>再起動可能</value>
+  </data>
+  <data name="Reason_RestartLimitExceeded" xml:space="preserve">
+    <value>再起動回数上限超過</value>
+  </data>
+  <data name="Reason_RestartPolicyDeclined" xml:space="preserve">
+    <value>再起動ポリシーにより再起動しない</value>
+  </data>
+  <data name="Reason_StartWithWatcherDisabled" xml:space="preserve">
+    <value>AppWatcher起動時の自動起動が無効</value>
+  </data>
+  <data name="Reason_StartupPolicy" xml:space="preserve">
+    <value>起動ポリシー</value>
+  </data>
+  <data name="Reason_UnexpectedProcessExit" xml:space="preserve">
+    <value>予期しないプロセス終了</value>
+  </data>
+  <data name="Reason_UserRequest" xml:space="preserve">
+    <value>ユーザー操作</value>
+  </data>
+  <data name="Reason_UserResume" xml:space="preserve">
+    <value>ユーザーが監視再開</value>
+  </data>
+  <data name="Reason_WatcherStartup" xml:space="preserve">
+    <value>AppWatcher起動</value>
+  </data>
+  <data name="Reason_WindowNotResponding" xml:space="preserve">
+    <value>ウィンドウが応答していない</value>
+  </data>
+  <data name="Reason_WindowResponsive" xml:space="preserve">
+    <value>ウィンドウ応答あり</value>
+  </data>
+  <data name="Reason_WindowsShutdownInProgress" xml:space="preserve">
+    <value>Windows終了処理中</value>
+  </data>
+  <data name="ReloadConfiguration" xml:space="preserve">
+    <value>設定を再読み込み</value>
+  </data>
+  <data name="RemoveApplicationPrompt" xml:space="preserve">
+    <value>'{0}' をAppWatcherから削除しますか？
+
+対象アプリ自体は終了しません。</value>
+  </data>
+  <data name="RemoveApplicationTitle" xml:space="preserve">
+    <value>アプリを削除</value>
+  </data>
+  <data name="RestartPolicy_AbnormalExitOnly" xml:space="preserve">
+    <value>異常終了時のみ再起動</value>
+  </data>
+  <data name="RestartPolicy_AnyUnexpectedExit" xml:space="preserve">
+    <value>予期しない終了なら再起動</value>
+  </data>
+  <data name="RestartPolicy_Never" xml:space="preserve">
+    <value>自動再起動しない</value>
+  </data>
+  <data name="ResumeAllMonitoring" xml:space="preserve">
+    <value>全監視を再開</value>
+  </data>
+  <data name="SaveDiagnosticPackageTitle" xml:space="preserve">
+    <value>AppWatcher診断パッケージの保存</value>
+  </data>
+  <data name="SelectApplication" xml:space="preserve">
+    <value>監視するアプリを選択</value>
+  </data>
+  <data name="SelectWorkingDirectory" xml:space="preserve">
+    <value>作業フォルダーを選択</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定...</value>
+  </data>
+  <data name="SettingsGeneralTab" xml:space="preserve">
+    <value>一般</value>
+  </data>
+  <data name="SettingsLogsTab" xml:space="preserve">
+    <value>ログ</value>
+  </data>
+  <data name="SettingsSavedRestart" xml:space="preserve">
+    <value>設定を保存しました。言語をすべてのコンポーネントへ反映するには、AppWatcher Agentを再起動し、ダッシュボードを開き直してください。</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>AppWatcher 設定</value>
+  </data>
+  <data name="StartElevatedHelperNow" xml:space="preserve">
+    <value>管理者権限Helperを今すぐ起動...</value>
+  </data>
+  <data name="StartNormalAgentNow" xml:space="preserve">
+    <value>通常権限Agentを今すぐ起動</value>
+  </data>
+  <data name="StartWithWatcher" xml:space="preserve">
+    <value>AppWatcher起動時に自動起動する</value>
+  </data>
+  <data name="StartupInstallFailed" xml:space="preserve">
+    <value>自動起動タスクのインストールに失敗しました。
+
+{0}</value>
+  </data>
+  <data name="StartupInstallSuccess" xml:space="preserve">
+    <value>現在のWindowsユーザー用に自動起動タスクを登録しました。
+
+• AppWatcher Agent: 対話型の通常ユーザー権限
+• AppWatcher Elevated: 対話型の最上位権限
+
+どちらもログオン中のデスクトップセッションでのみ動作するため、Session 0を避け、子GUIアプリも通常どおり表示できます。</value>
+  </data>
+  <data name="StartupMissingExecutables" xml:space="preserve">
+    <value>AppWatcher.Agent.exe と AppWatcher.Elevated.exe は AppWatcher.UI.exe と同じフォルダーに置く必要があります。個別プロジェクトのbinフォルダーではなく、公開済みAppWatcherフォルダーから実行してください。</value>
+  </data>
+  <data name="StartupSetupTitle" xml:space="preserve">
+    <value>AppWatcher 自動起動設定</value>
+  </data>
+  <data name="State_Backoff" xml:space="preserve">
+    <value>再起動待機中</value>
+  </data>
+  <data name="State_Failed" xml:space="preserve">
+    <value>復旧失敗</value>
+  </data>
+  <data name="State_Healthy" xml:space="preserve">
+    <value>正常</value>
+  </data>
+  <data name="State_Paused" xml:space="preserve">
+    <value>監視停止中</value>
+  </data>
+  <data name="State_Restarting" xml:space="preserve">
+    <value>再起動中</value>
+  </data>
+  <data name="State_Starting" xml:space="preserve">
+    <value>起動中</value>
+  </data>
+  <data name="State_Stopped" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="State_Unknown" xml:space="preserve">
+    <value>不明</value>
+  </data>
+  <data name="State_Unresponsive" xml:space="preserve">
+    <value>応答なし</value>
+  </data>
+  <data name="SummaryFormat" xml:space="preserve">
+    <value>正常 {0}    監視停止 {1}    問題 {2}    合計 {3}</value>
+  </data>
+  <data name="TabAdvanced" xml:space="preserve">
+    <value>詳細設定</value>
+  </data>
+  <data name="TabGeneral" xml:space="preserve">
+    <value>基本</value>
+  </data>
+  <data name="TabMonitoring" xml:space="preserve">
+    <value>監視</value>
+  </data>
+  <data name="TaskSchedulerCreateFailed" xml:space="preserve">
+    <value>タスクスケジューラCOMサービスを作成できませんでした。</value>
+  </data>
+  <data name="TaskSchedulerUnavailable" xml:space="preserve">
+    <value>WindowsタスクスケジューラのCOMサービスを利用できません。</value>
+  </data>
+  <data name="TitleAddApplication" xml:space="preserve">
+    <value>アプリを追加</value>
+  </data>
+  <data name="TitleEditApplication" xml:space="preserve">
+    <value>編集 - {0}</value>
+  </data>
+  <data name="TrayExitAgent" xml:space="preserve">
+    <value>AppWatcher Agentを終了</value>
+  </data>
+  <data name="TrayMaintenanceMode" xml:space="preserve">
+    <value>AppWatcher - メンテナンス中</value>
+  </data>
+  <data name="TrayMonitored" xml:space="preserve">
+    <value>AppWatcher - 監視対象 {0}件</value>
+  </data>
+  <data name="TrayMonitoring" xml:space="preserve">
+    <value>AppWatcher - 監視中</value>
+  </data>
+  <data name="TrayOpenDashboard" xml:space="preserve">
+    <value>ダッシュボードを開く</value>
+  </data>
+  <data name="TrayPauseAllMonitoring" xml:space="preserve">
+    <value>全監視を一時停止</value>
+  </data>
+  <data name="TrayPaused" xml:space="preserve">
+    <value>AppWatcher - 監視停止 {0}件</value>
+  </data>
+  <data name="TrayProblems" xml:space="preserve">
+    <value>AppWatcher - 問題 {0}件</value>
+  </data>
+  <data name="TrayResumeAllMonitoring" xml:space="preserve">
+    <value>全監視を再開</value>
+  </data>
+  <data name="UptimeDaysFormat" xml:space="preserve">
+    <value>{0}日 {1:00}:{2:00}</value>
+  </data>
+  <data name="ValidationApplicationNameRequired" xml:space="preserve">
+    <value>アプリ名を入力してください。</value>
+  </data>
+  <data name="ValidationExecutableMissing" xml:space="preserve">
+    <value>実行ファイルが見つかりません: {0}</value>
+  </data>
+  <data name="ValidationExecutablePathRequired" xml:space="preserve">
+    <value>実行ファイルを指定してください。</value>
+  </data>
+  <data name="ValidationHangInterval" xml:space="preserve">
+    <value>応答確認間隔は1秒以上にしてください。</value>
+  </data>
+  <data name="ValidationHangTimeout" xml:space="preserve">
+    <value>応答なし判定時間は応答確認間隔以上にしてください。</value>
+  </data>
+  <data name="ValidationMaxRestarts" xml:space="preserve">
+    <value>最大再起動回数は1回以上にしてください。</value>
+  </data>
+  <data name="ValidationRestartDelayNegative" xml:space="preserve">
+    <value>再起動待機時間に負の値は指定できません。</value>
+  </data>
+  <data name="ValidationRestartWindowBackoff" xml:space="preserve">
+    <value>判定時間と再起動待機時間は1分以上にしてください。</value>
+  </data>
+  <data name="ValidationWorkingDirectoryMissing" xml:space="preserve">
+    <value>作業フォルダーが見つかりません: {0}</value>
+  </data>
+  <data name="ZipFilter" xml:space="preserve">
+    <value>ZIPアーカイブ (*.zip)|*.zip</value>
+  </data>
+</root>
