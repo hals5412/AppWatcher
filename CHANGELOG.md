@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.19
+
+- Added automated ZIP package verification to both normal CI builds and tagged releases.
+- Package verification checks required executables, shared files, documentation, helper scripts and product version metadata.
+- Framework-dependent and self-contained packages are distinguished by bundled runtime files during verification.
+- Release packages are checked to ensure user data such as `config.json`, SQLite databases and fallback logs are never shipped.
+- Cleaned up Task Scheduler COM activation to avoid the nullable conversion warning in the startup path.
+- Expanded the manual release-blocker test plan for schema migration, startup self-check, scoped logs and release package integrity.
+- Generalized the remaining product-specific manual compatibility tests and corrected the stale Japanese README alpha-version banner.
 ## 0.1.0-alpha.18
 
 - Added a tag-driven GitHub Release workflow for `v*` tags.

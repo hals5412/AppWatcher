@@ -2,16 +2,17 @@
 
 These tests are release blockers for the first stable build.
 
-## A. TVRock / TVTest compatibility
+## A. Interactive parent / child GUI compatibility
 
-1. Start TVRock manually from Explorer and record normal behavior.
-2. Stop TVRock.
-3. Add TVRock to AppWatcher as a normal-user application.
-4. Start it from AppWatcher.
-5. Cause TVRock to launch TVTest in the same way used in normal operation.
-6. Confirm TVTest is visible on the logged-on desktop and interactive.
-7. Confirm TVTest has the expected user/session.
-8. Confirm AppWatcher stopping/restarting TVRock does not automatically terminate TVTest.
+1. Choose a normal desktop application that launches a separate GUI child application during normal use.
+2. Start the parent manually from Explorer and record normal behavior.
+3. Stop the parent.
+4. Add the parent to AppWatcher as a normal-user application.
+5. Start it from AppWatcher.
+6. Cause the parent to launch its GUI child in the same way used during normal operation.
+7. Confirm the child is visible and interactive on the logged-on desktop.
+8. Confirm the child runs under the expected user/session.
+9. Confirm AppWatcher stopping or restarting the parent does not automatically terminate the child while `ChildProcessPolicy` is `Unmanaged`.
 
 Pass criterion: launch behavior is materially equivalent to manual interactive launch.
 
@@ -56,10 +57,10 @@ Use a disposable test GUI that can intentionally block its UI thread.
 ## G. Elevated application
 
 1. Install startup tasks.
-2. Add Libre Hardware Monitor as Administrator.
-3. Confirm Elevated helper starts at high integrity without an ongoing visible window.
-4. Confirm LHM launches without a UAC prompt on every restart.
-5. Confirm LHM remains visible in the user's desktop session.
+2. Add a disposable desktop application that requires Administrator privileges.
+3. Confirm Elevated Helper starts at high integrity without an ongoing visible window.
+4. Confirm the target launches without a UAC prompt on every restart.
+5. Confirm the target remains visible in the user's desktop session.
 
 ## H. Windows shutdown/logoff
 
@@ -67,12 +68,17 @@ Use a disposable test GUI that can intentionally block its UI thread.
 2. Log off or shut down Windows.
 3. Confirm AppWatcher does not fight shutdown by relaunching targets.
 
-## I. Config corruption
+## I. Config corruption and migration
 
 1. Back up the data directory.
-2. Corrupt `config.json` while a valid backup exists.
-3. Restart hosts.
-4. Confirm backup recovery occurs and a `ConfigurationRecovery` fallback record is written.
+2. Confirm the active configuration is schema version 2.
+3. In a disposable copy, change the schema version to 1 and start AppWatcher.
+4. Confirm AppWatcher migrates it to schema 2 and preserves the original as `config.backup-1.json`.
+5. Corrupt `config.json` while a valid backup exists.
+6. Restart hosts.
+7. Confirm backup recovery occurs and a `ConfigurationRecovery` fallback record is written.
+8. In a disposable copy, set `schemaVersion` higher than the current supported version.
+9. Confirm AppWatcher rejects the newer schema rather than silently replacing it with an older backup.
 
 ## J. SQLite failure tolerance
 
@@ -81,25 +87,51 @@ Use a disposable test GUI that can intentionally block its UI thread.
 3. Confirm supervision/restart still occurs.
 4. Confirm fallback diagnostic logging is attempted.
 
+## K. Startup self-check
 
-## Complete shutdown / binary replacement
+1. Start AppWatcher with valid startup tasks and confirm no warning row is shown.
+2. Disable the Agent task and confirm a warning appears.
+3. Re-enable it, then temporarily change the registered executable path or working directory.
+4. Confirm AppWatcher reports the stale registration.
+5. Run **Install / repair startup tasks...** and confirm the warning clears.
+6. If an administrator target is configured, stop Elevated Helper and confirm the offline warning appears.
 
-1. Start Agent and Elevated helper and monitor at least one normal and one administrator target.
+## L. Application-scoped event log
+
+1. Generate several events for two monitored applications.
+2. Right-click one application and open Logs.
+3. Confirm only that application's events are shown.
+4. Rename the application and generate another event.
+5. Open its scoped logs again and confirm both old-name and new-name events are present.
+6. Open the global Logs button and confirm events from all applications and hosts remain visible.
+
+## M. Complete shutdown / binary replacement
+
+1. Start Agent and Elevated Helper and monitor at least one normal and one administrator target.
 2. Choose **Exit AppWatcher completely**.
 3. Verify `AppWatcher.Agent.exe`, `AppWatcher.Elevated.exe`, and the dashboard exit within 5 seconds.
 4. Verify monitored target processes remain running with the same PIDs.
 5. Replace AppWatcher binaries and start AppWatcher again; verify existing targets are attached when `AttachExisting` is enabled.
 6. Repeat with `AppWatcher.UI.exe --shutdown` and `stop-appwatcher.ps1`.
 
-## AppWatcher restart
+## N. AppWatcher restart
 
 1. Install the AppWatcher startup tasks.
 2. Choose **Restart AppWatcher** from the tray.
 3. Verify Agent and Elevated PIDs change while monitored target PIDs remain unchanged.
-4. Verify the Elevated helper returns without a new UAC prompt when the registered task exists.
+4. Verify the Elevated Helper returns without a new UAC prompt when the registered task exists.
 5. Verify event history contains `HostShutdownRequested` / `HostStopped` for both hosts.
 
-## Application icon
+## O. Release package integrity
+
+1. Download both release ZIPs and `SHA256SUMS.txt` from GitHub Releases.
+2. Verify each ZIP's SHA256 against the checksum file.
+3. Extract the framework-dependent package on a machine with the .NET 10 Desktop Runtime and launch the dashboard.
+4. Extract the self-contained package on a clean/disposable Windows environment without relying on an installed .NET runtime and launch the dashboard.
+5. Confirm Agent, Elevated Helper, UI, documentation and helper scripts are present.
+6. Confirm no user data (`config.json`, SQLite database, fallback log) is included in either ZIP.
+
+## P. Application icon
 
 1. Verify UI, Agent and Elevated executables show the AppWatcher icon in Explorer properties.
 2. Verify the dashboard taskbar icon and healthy tray icon use the AppWatcher icon.

@@ -48,6 +48,12 @@ jobs:
         shell: pwsh
         run: .\scripts\publish.ps1 -SelfContained -PackageSuffix "-self-contained"
 
+      - name: Verify release packages
+        shell: pwsh
+        run: |
+          .\scripts\verify-package.ps1 -PackagePath .\artifacts\AppWatcher-win-x64.zip
+          .\scripts\verify-package.ps1 -PackagePath .\artifacts\AppWatcher-win-x64-self-contained.zip -SelfContained
+
       - name: Create SHA256 checksums
         shell: pwsh
         run: |

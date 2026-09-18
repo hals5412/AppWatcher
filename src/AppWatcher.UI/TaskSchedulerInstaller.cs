@@ -147,8 +147,11 @@ internal static class TaskSchedulerInstaller
         {
             var serviceType = Type.GetTypeFromProgID("Schedule.Service");
             if (serviceType is null) return false;
-            dynamic service = Activator.CreateInstance(serviceType);
-            if (service is null) return false;
+
+            object? serviceObject = Activator.CreateInstance(serviceType);
+            if (serviceObject is null) return false;
+
+            dynamic service = serviceObject;
             service.Connect();
             dynamic folder = service.GetFolder("\\AppWatcher");
             return TryRun(folder, privilege == PrivilegeLevel.Administrator ? "Elevated" : "Agent");
