@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppWatcher.Core.Tests", "te
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppWatcher.TestWorker", "tests\AppWatcher.TestWorker\AppWatcher.TestWorker.csproj", "{F88C574B-A719-44CB-AF2A-D3F879F13AD8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,11 +89,24 @@ Global
 		{328883E7-12E0-4F09-B4B8-6B0EC0FBC97C}.Release|x64.Build.0 = Release|Any CPU
 		{328883E7-12E0-4F09-B4B8-6B0EC0FBC97C}.Release|x86.ActiveCfg = Release|Any CPU
 		{328883E7-12E0-4F09-B4B8-6B0EC0FBC97C}.Release|x86.Build.0 = Release|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Debug|x64.Build.0 = Debug|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Debug|x86.Build.0 = Debug|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Release|x64.ActiveCfg = Release|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Release|x64.Build.0 = Release|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Release|x86.ActiveCfg = Release|Any CPU
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{328883E7-12E0-4F09-B4B8-6B0EC0FBC97C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{F88C574B-A719-44CB-AF2A-D3F879F13AD8} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

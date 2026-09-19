@@ -18,5 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AppWatcher.Core\AppWatcher.Core.csproj" />
+    <ProjectReference Include="..\AppWatcher.TestWorker\AppWatcher.TestWorker.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

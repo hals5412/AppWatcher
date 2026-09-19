@@ -81,6 +81,14 @@ try {
         throw "Framework-dependent package unexpectedly contains hostfxr.dll."
     }
 
+    $unexpected = Get-ChildItem -LiteralPath $tempRoot -File -Recurse | Where-Object {
+        $_.Name -match '^(AppWatcher\.(Core\.Tests|TestWorker)(\.|$)|xunit|testhost|Microsoft\.(TestPlatform|Testing\.Platform|VisualStudio\.TestPlatform))' -or
+        $_.Name -match '^(config(\.backup-\d+)?\.json|events\.db(-wal|-shm)?|appwatcher-fallback\.log(\.\d+)?)$'
+    }
+    if ($unexpected) {
+        throw "Test components or runtime data found in package: $($unexpected.Name -join ', ')"
+    }
+
     $fileCount = (Get-ChildItem -LiteralPath $tempRoot -File -Recurse).Count
     if ($fileCount -lt 10) {
         throw "Package contains unexpectedly few files: $fileCount"
