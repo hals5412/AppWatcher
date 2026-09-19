@@ -215,7 +215,10 @@ internal sealed class MainForm : Form
         _grid.Columns.Add(Column("Application", Localization.T("ColumnApplication"), 170));
         _grid.Columns.Add(Column("Status", Localization.T("ColumnStatus"), 110));
         _grid.Columns.Add(Column("Privilege", Localization.T("ColumnPrivilege"), 90));
-        _grid.Columns.Add(Column("PID", "PID", 70));
+        var pidColumn = Column("PID", "PID", 70);
+        pidColumn.ValueType = typeof(int);
+        pidColumn.DefaultCellStyle.NullValue = "-";
+        _grid.Columns.Add(pidColumn);
         _grid.Columns.Add(Column("Uptime", Localization.T("ColumnUptime"), 105));
         _grid.Columns.Add(Column("Restarts", Localization.T("ColumnRestarts"), 95));
         _grid.Columns.Add(Column("LastEvent", Localization.T("ColumnLastEvent"), 170));
@@ -1031,7 +1034,7 @@ internal sealed class MainForm : Form
                     app.Name,
                     Localization.StateText(app.State),
                     Localization.PrivilegeText(app.Privilege),
-                    app.ProcessId?.ToString() ?? "-",
+                    app.ProcessId!, // 未起動時はnullを保持し、NullValueで表示する。
                     FormatUptime(app.Uptime),
                     app.RestartCountInWindow,
                     Localization.EventCode(app.LastEvent),
