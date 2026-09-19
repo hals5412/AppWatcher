@@ -9,47 +9,48 @@ public sealed class SupervisorEngine : IAsyncDisposable
     private readonly ConfigService _configService;
     private readonly IEventSink _events;
     private readonly EventStore _eventStore;
-    private readonly ProcessMatcher _matcher = new();
-    private readonly InteractiveProcessLauncher _launcher = new();
+    private readonly IProcessRuntime _runtime;
+    private readonly TimeProvider _time;
     private readonly ConcurrentDictionary<Guid, ApplicationSupervisor> _supervisors = new();
     private readonly SemaphoreSlim _reloadGate = new(1, 1);
+    private int _maintenanceGeneration;
+    private readonly List<Task> _maintenanceTasks = [];
+    private volatile bool _maintenanceActive;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly DateTimeOffset _startedUtc = DateTimeOffset.UtcNow;
 
     private volatile bool _shuttingDown;
     private int _exitRequested;
-    private volatile bool _maintenanceIndefinite;
     private DateTimeOffset? _maintenanceUntilUtc;
     private CancellationTokenSource? _maintenanceTimerCts;
     private AppWatcherConfiguration _configuration = new();
+    private Task _logMaintenance = Task.CompletedTask;
+    private readonly bool _ownsEvents;
+    private readonly object _disposeLock = new();
+    private Task? _disposeTask;
 
-    public SupervisorEngine(PrivilegeLevel hostPrivilege, ConfigService configService, EventStore eventStore)
+    public SupervisorEngine(PrivilegeLevel hostPrivilege, ConfigService configService, EventStore eventStore,
+        IProcessRuntime? runtime = null, TimeProvider? time = null, IEventSink? events = null)
     {
         _hostPrivilege = hostPrivilege;
         _configService = configService;
         _eventStore = eventStore;
-        _events = new ResilientEventSink(eventStore);
+        _events = events ?? new ResilientEventSink(eventStore, time);
+        _ownsEvents = events is null;
+        _runtime = runtime ?? new WindowsProcessRuntime();
+        _time = time ?? TimeProvider.System;
     }
 
     public PrivilegeLevel HostPrivilege => _hostPrivilege;
     public bool IsShuttingDown => _shuttingDown;
     public bool ExitRequested => Volatile.Read(ref _exitRequested) != 0;
-    public bool IsMaintenanceActive => _maintenanceIndefinite || (_maintenanceUntilUtc is not null && _maintenanceUntilUtc > DateTimeOffset.UtcNow);
+    public bool IsMaintenanceActive => _maintenanceActive;
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        await _eventStore.InitializeAsync(cancellationToken).ConfigureAwait(false);
         await ReloadAsync(cancellationToken).ConfigureAwait(false);
 
-        try
-        {
-            var retention = Math.Max(1, _configuration.Global.EventRetentionDays);
-            await _eventStore.PurgeOlderThanAsync(DateTimeOffset.UtcNow.AddDays(-retention), cancellationToken).ConfigureAwait(false);
-        }
-        catch
-        {
-            // Retention maintenance is non-critical.
-        }
+        _logMaintenance = Task.Run(MaintainLogsAsync);
 
         await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "HostStarted", "Startup", new
         {
@@ -64,8 +65,10 @@ public sealed class SupervisorEngine : IAsyncDisposable
         await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            _configuration = await _configService.LoadAsync(cancellationToken).ConfigureAwait(false);
-            var relevant = _configuration.Applications
+            ThrowIfShuttingDown();
+            var next = await _configService.LoadAsync(cancellationToken).ConfigureAwait(false);
+            await ValidateConfigurationLockedAsync(next, cancellationToken).ConfigureAwait(false);
+            var relevant = next.Applications
                 .Where(a => a.Privilege == _hostPrivilege)
                 .ToDictionary(a => a.Id);
 
@@ -82,21 +85,26 @@ public sealed class SupervisorEngine : IAsyncDisposable
 
             foreach (var definition in relevant.Values)
             {
-                if (_supervisors.TryRemove(definition.Id, out var old))
+                if (_supervisors.TryGetValue(definition.Id, out var old))
                 {
-                    await old.DisposeAsync().ConfigureAwait(false);
+                    await old.UpdateAsync(definition, cancellationToken).ConfigureAwait(false);
+                    continue;
                 }
 
                 var supervisor = new ApplicationSupervisor(
                     definition,
-                    _matcher,
-                    _launcher,
+                    _runtime,
                     _events,
                     () => IsMaintenanceActive,
-                    () => _shuttingDown);
+                    () => _shuttingDown,
+                    _time);
                 _supervisors[definition.Id] = supervisor;
-                await supervisor.InitializeAsync(cancellationToken).ConfigureAwait(false);
+                var previous = _configuration.Applications.FirstOrDefault(a => a.Id == definition.Id);
+                if (previous is not null && previous.Privilege != definition.Privilege)
+                    await supervisor.StopAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+                else await supervisor.InitializeAsync(cancellationToken).ConfigureAwait(false);
             }
+            _configuration = next;
 
             await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "ConfigurationReloaded", "Reload", new
             {
@@ -114,7 +122,7 @@ public sealed class SupervisorEngine : IAsyncDisposable
     {
         var now = DateTimeOffset.UtcNow;
         var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "0.0.0";
-        var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+        using var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
         return new HostSnapshot(
             _hostPrivilege,
             currentProcess.Id,
@@ -140,69 +148,115 @@ public sealed class SupervisorEngine : IAsyncDisposable
 
     public async Task StartApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var supervisor = GetSupervisor(id);
-        await supervisor.StartAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfShuttingDown();
+            var supervisor = GetSupervisor(id);
+            await supervisor.StartAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        finally { _reloadGate.Release(); }
     }
 
     public async Task StopApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var supervisor = GetSupervisor(id);
-        await supervisor.StopAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfShuttingDown();
+            var supervisor = GetSupervisor(id);
+            await supervisor.StopAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        finally { _reloadGate.Release(); }
     }
 
     public async Task RestartApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var supervisor = GetSupervisor(id);
-        await supervisor.RestartAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfShuttingDown();
+            var supervisor = GetSupervisor(id);
+            await supervisor.RestartAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        finally { _reloadGate.Release(); }
     }
 
     public async Task PauseApplicationAsync(Guid id, TimeSpan? duration, CancellationToken cancellationToken = default)
     {
-        var supervisor = GetSupervisor(id);
-        await supervisor.PauseAsync(duration, cancellationToken).ConfigureAwait(false);
+        await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfShuttingDown();
+            var supervisor = GetSupervisor(id);
+            await supervisor.PauseAsync(duration, cancellationToken).ConfigureAwait(false);
+        }
+        finally { _reloadGate.Release(); }
     }
 
     public async Task ResumeApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var supervisor = GetSupervisor(id);
-        await supervisor.ResumeAsync(cancellationToken).ConfigureAwait(false);
+        await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfShuttingDown();
+            var supervisor = GetSupervisor(id);
+            await supervisor.ResumeAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally { _reloadGate.Release(); }
     }
 
     public async Task SetMaintenanceAsync(TimeSpan? duration, CancellationToken cancellationToken = default)
     {
-        _maintenanceTimerCts?.Cancel();
-        _maintenanceTimerCts?.Dispose();
-        _maintenanceTimerCts = null;
+        await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfShuttingDown();
+            var generation = ++_maintenanceGeneration;
+            _maintenanceActive = true;
+            _maintenanceTimerCts?.Cancel();
+            _maintenanceTimerCts?.Dispose();
+            _maintenanceTimerCts = null;
 
-        if (duration is null)
-        {
-            _maintenanceIndefinite = true;
-            _maintenanceUntilUtc = null;
-        }
-        else
-        {
-            _maintenanceIndefinite = false;
-            _maintenanceUntilUtc = DateTimeOffset.UtcNow.Add(duration.Value);
-            _maintenanceTimerCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
-            _ = ResumeMaintenanceAfterDelayAsync(duration.Value, _maintenanceTimerCts.Token);
-        }
+            if (duration is null)
+            {
+                _maintenanceUntilUtc = null;
+            }
+            else
+            {
+                _maintenanceUntilUtc = _time.GetUtcNow().Add(duration.Value);
+                _maintenanceTimerCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+                _maintenanceTasks.RemoveAll(t => t.IsCompleted);
+                _maintenanceTasks.Add(ResumeMaintenanceAfterDelayAsync(duration.Value, generation, _maintenanceTimerCts.Token));
+            }
 
-        await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "MaintenanceStarted", "UserRequest", new
-        {
-            privilege = _hostPrivilege.ToString(),
-            durationSeconds = duration?.TotalSeconds,
-            untilUtc = _maintenanceUntilUtc
-        }), cancellationToken).ConfigureAwait(false);
+            await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "MaintenanceStarted", "UserRequest", new
+            {
+                privilege = _hostPrivilege.ToString(),
+                durationSeconds = duration?.TotalSeconds,
+                untilUtc = _maintenanceUntilUtc
+            }), cancellationToken).ConfigureAwait(false);
 
-        foreach (var supervisor in _supervisors.Values)
-        {
-            await supervisor.OnGlobalPauseChangedAsync(true, cancellationToken).ConfigureAwait(false);
+            foreach (var supervisor in _supervisors.Values)
+            {
+                await supervisor.OnGlobalPauseChangedAsync(true, cancellationToken).ConfigureAwait(false);
+            }
         }
+        finally { _reloadGate.Release(); }
     }
 
     public async Task ResumeMaintenanceAsync(CancellationToken cancellationToken = default)
     {
-        _maintenanceIndefinite = false;
+        await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { await ResumeMaintenanceLockedAsync(cancellationToken).ConfigureAwait(false); }
+        finally { _reloadGate.Release(); }
+    }
+
+    private async Task ResumeMaintenanceLockedAsync(CancellationToken cancellationToken)
+    {
+        ThrowIfShuttingDown();
+        ++_maintenanceGeneration;
+        _maintenanceActive = false;
         _maintenanceUntilUtc = null;
         _maintenanceTimerCts?.Cancel();
         _maintenanceTimerCts?.Dispose();
@@ -251,44 +305,106 @@ public sealed class SupervisorEngine : IAsyncDisposable
         return supervisor;
     }
 
-    private async Task ResumeMaintenanceAfterDelayAsync(TimeSpan duration, CancellationToken cancellationToken)
+    private async Task ResumeMaintenanceAfterDelayAsync(TimeSpan duration, int generation, CancellationToken cancellationToken)
     {
         try
         {
-            await Task.Delay(duration, cancellationToken).ConfigureAwait(false);
-            await ResumeMaintenanceAsync(cancellationToken).ConfigureAwait(false);
+            await Task.Delay(duration, _time, cancellationToken).ConfigureAwait(false);
+            await _reloadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                if (!_shuttingDown && generation == _maintenanceGeneration)
+                    await ResumeMaintenanceLockedAsync(_lifetime.Token).ConfigureAwait(false);
+            }
+            finally { _reloadGate.Release(); }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
         }
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        if (_shuttingDown)
-        {
-            // Already marked as shutting down, continue disposal.
-        }
-        _shuttingDown = true;
-        _lifetime.Cancel();
-        _maintenanceTimerCts?.Cancel();
+        lock (_disposeLock) return new ValueTask(_disposeTask ??= DisposeCoreAsync());
+    }
 
-        foreach (var pair in _supervisors.ToArray())
+    private async Task DisposeCoreAsync()
+    {
+        await _reloadGate.WaitAsync().ConfigureAwait(false);
+        try
         {
-            if (_supervisors.TryRemove(pair.Key, out var supervisor))
+            if (_shuttingDown)
             {
-                await supervisor.DisposeAsync().ConfigureAwait(false);
+                // Already marked as shutting down, continue disposal.
             }
+            _shuttingDown = true;
+            _lifetime.Cancel();
+            _maintenanceTimerCts?.Cancel();
+            await Task.WhenAll(_maintenanceTasks).ConfigureAwait(false);
+            await _logMaintenance.ConfigureAwait(false);
+
+            foreach (var pair in _supervisors.ToArray())
+            {
+                if (_supervisors.TryRemove(pair.Key, out var supervisor))
+                {
+                    await supervisor.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+
+            await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "HostStopped", "Shutdown", new
+            {
+                privilege = _hostPrivilege.ToString(),
+                uptimeSeconds = (DateTimeOffset.UtcNow - _startedUtc).TotalSeconds
+            })).ConfigureAwait(false);
+
+            _maintenanceTimerCts?.Dispose();
+            if (_ownsEvents && _events is IAsyncDisposable disposable) await disposable.DisposeAsync().ConfigureAwait(false);
+            _lifetime.Dispose();
         }
+        finally { _reloadGate.Release(); }
+    }
 
-        await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "HostStopped", "Shutdown", new
+    private void ThrowIfShuttingDown()
+    {
+        if (_shuttingDown) throw new InvalidOperationException("Host is shutting down.");
+    }
+
+    public async Task ValidateConfigurationAsync(AppWatcherConfiguration configuration, CancellationToken token = default)
+    {
+        await _reloadGate.WaitAsync(token).ConfigureAwait(false);
+        try { ThrowIfShuttingDown(); await ValidateConfigurationLockedAsync(configuration, token).ConfigureAwait(false); }
+        finally { _reloadGate.Release(); }
+    }
+
+    private async Task ValidateConfigurationLockedAsync(AppWatcherConfiguration configuration, CancellationToken token)
+    {
+        if (configuration.Applications.Select(a => a.Id).Distinct().Count() != configuration.Applications.Count)
+            throw new InvalidDataException("Duplicate application IDs are not allowed.");
+        foreach (var definition in configuration.Applications)
         {
-            privilege = _hostPrivilege.ToString(),
-            uptimeSeconds = (DateTimeOffset.UtcNow - _startedUtc).TotalSeconds
-        })).ConfigureAwait(false);
+            var result = _configService.Validate(definition);
+            if (!result.Success) throw new InvalidDataException(string.Join(Environment.NewLine, result.Messages));
+            if (_supervisors.TryGetValue(definition.Id, out var supervisor))
+                await supervisor.ValidateUpdateAsync(definition, token).ConfigureAwait(false);
+        }
+    }
 
-        _maintenanceTimerCts?.Dispose();
-        _lifetime.Dispose();
-        _reloadGate.Dispose();
+    private async Task MaintainLogsAsync()
+    {
+        try
+        {
+            do
+            {
+                try { await _eventStore.MaintainAsync(_configuration.Global, _time.GetUtcNow(), _lifetime.Token).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return; }
+                catch (Exception ex)
+                {
+                    await new FallbackLog(Path.Combine(_eventStore.DataDirectory, "appwatcher-fallback.log"))
+                        .WriteAsync($"LogMaintenanceFailed: {ex.GetType().Name}", _lifetime.Token).ConfigureAwait(false);
+                }
+                await Task.Delay(TimeSpan.FromHours(1), _time, _lifetime.Token).ConfigureAwait(false);
+            } while (!_lifetime.IsCancellationRequested);
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
     }
 }

@@ -927,4 +927,7 @@ Use Tools &gt; Install / repair startup tasks to repair missing, disabled, or st
   <data name="EventLogTitleForApplication" xml:space="preserve">
     <value>Event log - {0}</value>
   </data>
+  <data name="StopBeforeIdentityChange" xml:space="preserve"><value>Stop the application explicitly before changing its executable or privilege.</value></data>
+  <data name="HostOperationFailureFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="ConfigurationSaveFailed" xml:space="preserve"><value>Could not save configuration: {0}</value></data>
 </root>

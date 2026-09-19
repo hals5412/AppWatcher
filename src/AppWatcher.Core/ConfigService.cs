@@ -4,7 +4,7 @@ namespace AppWatcher.Core;
 
 public sealed class ConfigService
 {
-    private static readonly SemaphoreSlim Gate = new(1, 1);
+    public string DataDirectory => _dataDirectory;
     private readonly string _dataDirectory;
 
     public ConfigService(string? dataDirectory = null)
@@ -20,49 +20,14 @@ public sealed class ConfigService
     public async Task<AppWatcherConfiguration> LoadAsync(CancellationToken cancellationToken = default)
     {
         EnsureDataDirectory();
-        await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await using var lease = await FileLease.AcquireAsync(Path.Combine(_dataDirectory, "config.lock"), TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
         try
         {
-            if (!File.Exists(ConfigFile))
-            {
-                var empty = new AppWatcherConfiguration();
-                ConfigurationMigrator.PrepareForSave(empty);
-                await WriteFileAsync(ConfigFile, empty, cancellationToken).ConfigureAwait(false);
-                return empty;
-            }
-
-            ConfigurationReadResult primary;
-            try
-            {
-                primary = await ConfigurationMigrator.ReadAsync(
-                    ConfigFile,
-                    cancellationToken).ConfigureAwait(false);
-            }
-            catch (UnsupportedConfigurationSchemaException)
-            {
-                // Never silently fall back to an older backup when the primary file
-                // belongs to a newer AppWatcher version. Doing so could discard settings.
-                throw;
-            }
-            catch (Exception primaryEx)
-            {
-                return await RecoverFromBackupAsync(
-                    primaryEx,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            if (primary.WasMigrated)
-            {
-                await PersistMigratedConfigurationAsync(
-                    primary,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            return primary.Configuration;
+            return await LoadLockedAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            Gate.Release();
+            // ファイルハンドルの破棄でプロセス間ロックを解放する。
         }
     }
 
@@ -71,19 +36,80 @@ public sealed class ConfigService
         ArgumentNullException.ThrowIfNull(configuration);
         EnsureDataDirectory();
 
-        await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await using var lease = await FileLease.AcquireAsync(Path.Combine(_dataDirectory, "config.lock"), TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
         try
         {
             ConfigurationMigrator.PrepareForSave(configuration);
-            RotateBackups();
+            await RotateReadableBackupsAsync(cancellationToken).ConfigureAwait(false);
             await WriteAtomicallyAsync(
                 configuration,
                 cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            Gate.Release();
+            // ファイルハンドルの破棄でプロセス間ロックを解放する。
         }
+    }
+
+    private async Task<AppWatcherConfiguration> LoadLockedAsync(CancellationToken cancellationToken)
+    {
+        if (!File.Exists(ConfigFile))
+        {
+            var empty = new AppWatcherConfiguration();
+            ConfigurationMigrator.PrepareForSave(empty);
+            await WriteAtomicallyAsync(empty, cancellationToken).ConfigureAwait(false);
+            return empty;
+        }
+
+        ConfigurationReadResult primary;
+        try
+        {
+            primary = await ConfigurationMigrator.ReadAsync(
+                ConfigFile,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (UnsupportedConfigurationSchemaException)
+        {
+            // Never silently fall back to an older backup when the primary file
+            // belongs to a newer AppWatcher version. Doing so could discard settings.
+            throw;
+        }
+        catch (Exception primaryEx) when (primaryEx is JsonException or InvalidDataException)
+        {
+            return await RecoverFromBackupAsync(
+                primaryEx,
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        if (primary.WasMigrated)
+        {
+            await PersistMigratedConfigurationAsync(
+                primary,
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return primary.Configuration;
+    }
+
+    public async Task<AppWatcherConfiguration> UpdateAsync(Action<AppWatcherConfiguration> update, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(update);
+        EnsureDataDirectory();
+        await using var lease = await FileLease.AcquireAsync(Path.Combine(_dataDirectory, "config.lock"), TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
+        var current = await LoadLockedAsync(cancellationToken).ConfigureAwait(false);
+        update(current);
+        ConfigurationMigrator.PrepareForSave(current);
+        await RotateReadableBackupsAsync(cancellationToken).ConfigureAwait(false);
+        await WriteAtomicallyAsync(current, cancellationToken).ConfigureAwait(false);
+        return current;
+    }
+
+    private async Task RotateReadableBackupsAsync(CancellationToken token)
+    {
+        if (!File.Exists(ConfigFile)) return;
+        try { await ConfigurationMigrator.ReadAsync(ConfigFile, token).ConfigureAwait(false); }
+        catch (Exception ex) when (ex is JsonException or InvalidDataException) { return; }
+        RotateBackups();
     }
 
     public ConfigurationValidationResult Validate(ApplicationDefinition definition)
@@ -170,7 +196,7 @@ public sealed class ConfigService
 
                 return recovered.Configuration;
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidDataException or UnsupportedConfigurationSchemaException)
             {
                 // Try the next backup.
             }
@@ -197,14 +223,14 @@ public sealed class ConfigService
         AppWatcherConfiguration configuration,
         CancellationToken cancellationToken)
     {
-        var temp = ConfigFile + ".tmp";
+        var temp = ConfigFile + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
             await WriteFileAsync(
                 temp,
                 configuration,
                 cancellationToken).ConfigureAwait(false);
-            File.Move(temp, ConfigFile, true);
+            if (File.Exists(ConfigFile)) File.Replace(temp, ConfigFile, null); else File.Move(temp, ConfigFile);
         }
         finally
         {
@@ -259,9 +285,7 @@ public sealed class ConfigService
         try
         {
             EnsureDataDirectory();
-            File.AppendAllText(
-                FallbackLog,
-                $"{DateTimeOffset.UtcNow:O} {message}{Environment.NewLine}");
+            new AppWatcher.Core.FallbackLog(FallbackLog).WriteAsync($"{DateTimeOffset.UtcNow:O} {message}{Environment.NewLine}").GetAwaiter().GetResult();
         }
         catch
         {

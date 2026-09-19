@@ -927,4 +927,7 @@ AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監�
   <data name="EventLogTitleForApplication" xml:space="preserve">
     <value>イベントログ - {0}</value>
   </data>
+  <data name="StopBeforeIdentityChange" xml:space="preserve"><value>実行ファイルや権限を変更する前に、対象アプリを明示的に停止してください。</value></data>
+  <data name="HostOperationFailureFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="ConfigurationSaveFailed" xml:space="preserve"><value>設定を保存できませんでした: {0}</value></data>
 </root>

@@ -120,7 +120,19 @@ internal sealed class SettingsForm : Form
 
         _configuration.Global.Language = language;
         _configuration.Global.EventRetentionDays = (int)_retentionDays.Value;
-        await _configService.SaveAsync(_configuration);
+        try
+        {
+            await _configService.UpdateAsync(latest =>
+            {
+                latest.Global.Language = language;
+                latest.Global.EventRetentionDays = (int)_retentionDays.Value;
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, Localization.F("ConfigurationSaveFailed", ex.Message), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
 
         if (changedLanguage)
         {

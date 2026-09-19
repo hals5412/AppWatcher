@@ -125,6 +125,7 @@ internal static class ConfigurationMigrator
         configuration.Applications ??= [];
         configuration.Global ??= new GlobalSettings();
         configuration.Global.DashboardColumns ??= [];
+        configuration.Global.EventDatabaseMaxMegabytes = Math.Max(10, configuration.Global.EventDatabaseMaxMegabytes);
 
         foreach (var application in configuration.Applications)
         {

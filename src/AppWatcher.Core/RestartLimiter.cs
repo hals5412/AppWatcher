@@ -4,6 +4,8 @@ public readonly record struct RestartPermission(bool Allowed, bool EnteredBackof
 
 public sealed class RestartLimiter(ApplicationDefinition definition)
 {
+    private ApplicationDefinition _definition = definition;
+    private readonly object _sync = new();
     private readonly Queue<DateTimeOffset> _restartAttempts = new();
     private DateTimeOffset? _backoffUntilUtc;
 
@@ -11,16 +13,24 @@ public sealed class RestartLimiter(ApplicationDefinition definition)
     {
         get
         {
-            Prune(DateTimeOffset.UtcNow);
-            return _restartAttempts.Count;
+            return CountAt(DateTimeOffset.UtcNow);
         }
     }
 
-    public DateTimeOffset? BackoffUntilUtc => _backoffUntilUtc;
+    public DateTimeOffset? BackoffUntilUtc { get { lock (_sync) return _backoffUntilUtc; } }
+
+    public int CountAt(DateTimeOffset now) { lock (_sync) return _restartAttempts.Count(t => t >= now.AddMinutes(-Math.Max(1, _definition.RestartWindowMinutes))); }
+    public void UpdateDefinition(ApplicationDefinition value) { lock (_sync) _definition = value; }
 
     public RestartPermission TryAcquire(DateTimeOffset now)
     {
-        if (!definition.RestartLoopProtectionEnabled)
+        lock (_sync) return TryAcquireLocked(now);
+    }
+
+    private RestartPermission TryAcquireLocked(DateTimeOffset now)
+    {
+        Prune(now);
+        if (!_definition.RestartLoopProtectionEnabled)
         {
             _restartAttempts.Enqueue(now);
             return new RestartPermission(true, false, null, "LoopProtectionDisabled");
@@ -36,9 +46,9 @@ public sealed class RestartLimiter(ApplicationDefinition definition)
         }
 
         Prune(now);
-        if (_restartAttempts.Count >= definition.MaxRestarts)
+        if (_restartAttempts.Count >= _definition.MaxRestarts)
         {
-            _backoffUntilUtc = now.AddMinutes(Math.Max(1, definition.BackoffMinutes));
+            _backoffUntilUtc = now.AddMinutes(Math.Max(1, _definition.BackoffMinutes));
             return new RestartPermission(false, true, _backoffUntilUtc, "RestartLimitExceeded");
         }
 
@@ -48,13 +58,16 @@ public sealed class RestartLimiter(ApplicationDefinition definition)
 
     public void ResetHealthy()
     {
-        _restartAttempts.Clear();
-        _backoffUntilUtc = null;
+        lock (_sync)
+        {
+            _restartAttempts.Clear();
+            _backoffUntilUtc = null;
+        }
     }
 
     private void Prune(DateTimeOffset now)
     {
-        var threshold = now.AddMinutes(-Math.Max(1, definition.RestartWindowMinutes));
+        var threshold = now.AddMinutes(-Math.Max(1, _definition.RestartWindowMinutes));
         while (_restartAttempts.Count > 0 && _restartAttempts.Peek() < threshold)
         {
             _restartAttempts.Dequeue();

@@ -286,7 +286,7 @@ internal sealed class MainForm : Form
                     },
                     StringComparer.Ordinal);
 
-            _configService.SaveAsync(config).GetAwaiter().GetResult();
+            _configService.UpdateAsync(latest => latest.Global.DashboardColumns = config.Global.DashboardColumns).GetAwaiter().GetResult();
             _columnLayoutDirty = false;
         }
         catch (Exception ex)
@@ -294,9 +294,7 @@ internal sealed class MainForm : Form
             try
             {
                 AppPaths.EnsureDataDirectory();
-                File.AppendAllText(
-                    AppPaths.FallbackLog,
-                    $"{DateTimeOffset.UtcNow:O}`tWarning`tDashboardColumnLayoutSaveFailed`t{ex}{Environment.NewLine}");
+                new AppWatcher.Core.FallbackLog(AppPaths.FallbackLog).WriteAsync($"{DateTimeOffset.UtcNow:O}`tWarning`tDashboardColumnLayoutSaveFailed`t{ex}{Environment.NewLine}").GetAwaiter().GetResult();
             }
             catch
             {
@@ -545,8 +543,7 @@ internal sealed class MainForm : Form
         // Stop remains useful while monitoring is paused if the process itself
         // is still running.
         var canStop = !unavailable &&
-                      !transitional &&
-                      running;
+                      (running || state is AppRuntimeState.Restarting or AppRuntimeState.Backoff);
 
         // Restart only makes semantic sense for a currently running application.
         // While paused, restarting would stop it and then be suppressed by pause.
@@ -1245,7 +1242,12 @@ internal sealed class MainForm : Form
         }
 
         config.Applications.Add(editor.Result);
-        await _configService.SaveAsync(config);
+        if (!await ValidateBeforeSaveAsync(config, editor.Result)) return;
+        if (!await TryUpdateConfigurationAsync(latest =>
+        {
+            if (FindDuplicateApplication(latest.Applications, editor.Result) is not null) throw new InvalidOperationException(Localization.T("DuplicateApplicationTitle"));
+            latest.Applications.Add(editor.Result);
+        })) return;
         await EnsureHostForDefinitionAsync(editor.Result);
         await ReloadHostsAsync();
     }
@@ -1279,7 +1281,24 @@ internal sealed class MainForm : Form
 
         var index = config.Applications.FindIndex(a => a.Id == selected.Id);
         if (index >= 0) config.Applications[index] = editor.Result;
-        await _configService.SaveAsync(config);
+        if (ApplicationSupervisor.IdentityChanged(existing, editor.Result))
+        {
+            var response = await (existing.Privilege == PrivilegeLevel.Normal ? _normalClient : _adminClient).SendAsync(new SupervisorRequest(SupervisorCommandType.GetSnapshot));
+            var live = response.Snapshot?.Applications.FirstOrDefault(a => a.Id == existing.Id);
+            if (live is null || live.ProcessId is not null || live.LastReason != "IntentionalStop")
+            {
+                MessageBox.Show(this, Localization.T("StopBeforeIdentityChange"), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+        }
+        if (!await ValidateBeforeSaveAsync(config, editor.Result)) return;
+        if (!await TryUpdateConfigurationAsync(latest =>
+        {
+            var currentIndex = latest.Applications.FindIndex(a => a.Id == selected.Id);
+            if (currentIndex < 0) throw new InvalidOperationException("Application was removed while editing.");
+            if (FindDuplicateApplication(latest.Applications, editor.Result) is not null) throw new InvalidOperationException(Localization.T("DuplicateApplicationTitle"));
+            latest.Applications[currentIndex] = editor.Result;
+        })) return;
         await EnsureHostForDefinitionAsync(editor.Result);
         await ReloadHostsAsync();
     }
@@ -1327,19 +1346,40 @@ internal sealed class MainForm : Form
 
         var config = await _configService.LoadAsync();
         config.Applications.RemoveAll(a => a.Id == selected.Id);
-        await _configService.SaveAsync(config);
+        if (!await TryUpdateConfigurationAsync(latest => latest.Applications.RemoveAll(a => a.Id == selected.Id))) return;
         await ReloadHostsAsync();
+    }
+
+    private async Task<bool> TryUpdateConfigurationAsync(Action<AppWatcherConfiguration> update)
+    {
+        try { await _configService.UpdateAsync(update); return true; }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, Localization.F("ConfigurationSaveFailed", ex.Message), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+    }
+
+    private async Task ExecuteHostsAsync(SupervisorRequest request)
+    {
+        var config = await _configService.LoadAsync();
+        var errors = await HostOperations.ExecuteAsync(config, request);
+        if (errors.Count > 0) MessageBox.Show(this, string.Join(Environment.NewLine, errors), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+
+    private async Task<bool> ValidateBeforeSaveAsync(AppWatcherConfiguration next, ApplicationDefinition definition)
+    {
+        // 移管先を旧設定で先に起動し、権限変更を新規自動起動と誤認させない。
+        await EnsureHostForDefinitionAsync(definition);
+        var errors = await HostOperations.ExecuteAsync(next, new SupervisorRequest(SupervisorCommandType.ReloadConfiguration, ConfigurationPreview: next));
+        if (errors.Count == 0) return true;
+        MessageBox.Show(this, string.Join(Environment.NewLine, errors), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return false;
     }
 
     private async Task ReloadHostsAsync()
     {
-        await Task.WhenAll(
-            _normalClient.SendAsync(
-                new SupervisorRequest(SupervisorCommandType.ReloadConfiguration),
-                TimeSpan.FromSeconds(2)),
-            _adminClient.SendAsync(
-                new SupervisorRequest(SupervisorCommandType.ReloadConfiguration),
-                TimeSpan.FromSeconds(2)));
+        await ExecuteHostsAsync(new SupervisorRequest(SupervisorCommandType.ReloadConfiguration));
         await RefreshDashboardAsync();
     }
 
@@ -1377,17 +1417,13 @@ internal sealed class MainForm : Form
     private async Task SetGlobalMaintenanceAsync(TimeSpan? duration)
     {
         var seconds = duration is null ? null : (int?)Math.Clamp((long)duration.Value.TotalSeconds, 1, int.MaxValue);
-        await Task.WhenAll(
-            _normalClient.SendAsync(new SupervisorRequest(SupervisorCommandType.StartMaintenance, DurationSeconds: seconds)),
-            _adminClient.SendAsync(new SupervisorRequest(SupervisorCommandType.StartMaintenance, DurationSeconds: seconds)));
+        await ExecuteHostsAsync(new SupervisorRequest(SupervisorCommandType.StartMaintenance, DurationSeconds: seconds));
         await RefreshDashboardAsync();
     }
 
     private async Task ResumeGlobalMaintenanceAsync()
     {
-        await Task.WhenAll(
-            _normalClient.SendAsync(new SupervisorRequest(SupervisorCommandType.ResumeMaintenance)),
-            _adminClient.SendAsync(new SupervisorRequest(SupervisorCommandType.ResumeMaintenance)));
+        await ExecuteHostsAsync(new SupervisorRequest(SupervisorCommandType.ResumeMaintenance));
         await RefreshDashboardAsync();
     }
 

@@ -12,15 +12,15 @@ internal static class Program
 
         AppPaths.EnsureDataDirectory();
         var config = new ConfigService();
-        var loadedConfig = config.LoadAsync().GetAwaiter().GetResult();
-        Localization.Apply(loadedConfig.Global.Language);
-        ApplicationConfiguration.Initialize();
         var eventStore = new EventStore();
         var engine = new SupervisorEngine(PrivilegeLevel.Normal, config, eventStore);
         var pipeServer = new SupervisorPipeServer(engine);
 
         try
         {
+            var loadedConfig = config.LoadAsync().GetAwaiter().GetResult();
+            Localization.Apply(loadedConfig.Global.Language);
+            ApplicationConfiguration.Initialize();
             engine.StartAsync().GetAwaiter().GetResult();
             pipeServer.Start();
             Application.Run(new TrayApplicationContext(engine));
@@ -40,8 +40,7 @@ internal static class Program
     {
         try
         {
-            File.AppendAllText(AppPaths.FallbackLog,
-                $"{DateTimeOffset.UtcNow:O}\tCritical\tAgentFatal\t{ex}{Environment.NewLine}");
+            new AppWatcher.Core.FallbackLog(AppPaths.FallbackLog).WriteAsync($"{DateTimeOffset.UtcNow:O}\tCritical\tAgentFatal\t{ex}{Environment.NewLine}").GetAwaiter().GetResult();
         }
         catch { }
     }

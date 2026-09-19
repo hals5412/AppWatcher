@@ -63,7 +63,10 @@ internal sealed class TrayApplicationContext : ApplicationContext
     {
         try
         {
-            await _engine.SetMaintenanceAsync(duration);
+            var config = await new ConfigService().LoadAsync();
+            var seconds = duration is null ? null : (int?)duration.Value.TotalSeconds;
+            var errors = await HostOperations.ExecuteAsync(config, new SupervisorRequest(SupervisorCommandType.StartMaintenance, DurationSeconds: seconds));
+            if (errors.Count > 0) MessageBox.Show(string.Join(Environment.NewLine, errors), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             UpdateStatus();
         }
         catch (Exception ex)
@@ -76,7 +79,9 @@ internal sealed class TrayApplicationContext : ApplicationContext
     {
         try
         {
-            await _engine.ResumeMaintenanceAsync();
+            var config = await new ConfigService().LoadAsync();
+            var errors = await HostOperations.ExecuteAsync(config, new SupervisorRequest(SupervisorCommandType.ResumeMaintenance));
+            if (errors.Count > 0) MessageBox.Show(string.Join(Environment.NewLine, errors), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             UpdateStatus();
         }
         catch (Exception ex)

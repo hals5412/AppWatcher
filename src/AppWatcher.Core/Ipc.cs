@@ -26,7 +26,8 @@ public enum SupervisorCommandType
 public sealed record SupervisorRequest(
     SupervisorCommandType Command,
     Guid? ApplicationId = null,
-    int? DurationSeconds = null);
+    int? DurationSeconds = null,
+    AppWatcherConfiguration? ConfigurationPreview = null);
 
 public sealed record SupervisorResponse(
     bool Success,
@@ -61,6 +62,7 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
     private readonly string _pipeName;
     private readonly CancellationTokenSource _lifetime = new();
     private Task? _runTask;
+    private readonly List<Task> _clients = [];
 
     public SupervisorPipeServer(SupervisorEngine engine)
     {
@@ -85,7 +87,8 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
                 await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
 
                 // HandleClientAsync owns and disposes the connected stream.
-                _ = HandleClientAsync(server, cancellationToken);
+                _clients.RemoveAll(t => t.IsCompleted);
+                _clients.Add(HandleClientAsync(server, cancellationToken));
                 server = null;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -152,9 +155,7 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
         try
         {
             AppPaths.EnsureDataDirectory();
-            File.AppendAllText(
-                AppPaths.FallbackLog,
-                $"{DateTimeOffset.UtcNow:O}`tError`tPipeServerFailure`tPipe={_pipeName}`t{ex}{Environment.NewLine}");
+            new AppWatcher.Core.FallbackLog(AppPaths.FallbackLog).WriteAsync($"{DateTimeOffset.UtcNow:O}`tError`tPipeServerFailure`tPipe={_pipeName}`t{ex}{Environment.NewLine}").GetAwaiter().GetResult();
         }
         catch
         {
@@ -198,6 +199,11 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
                         true,
                         RunningProcesses: _engine.GetRunningProcesses());
                 case SupervisorCommandType.ReloadConfiguration:
+                    if (request.ConfigurationPreview is not null)
+                    {
+                        await _engine.ValidateConfigurationAsync(request.ConfigurationPreview, cancellationToken).ConfigureAwait(false);
+                        return new SupervisorResponse(true);
+                    }
                     await _engine.ReloadAsync(cancellationToken).ConfigureAwait(false);
                     return new SupervisorResponse(true, Snapshot: _engine.Snapshot());
                 case SupervisorCommandType.StartApplication:
@@ -252,6 +258,7 @@ public sealed class SupervisorPipeServer : IAsyncDisposable
             try { await _runTask.ConfigureAwait(false); }
             catch (OperationCanceledException) { }
         }
+        await Task.WhenAll(_clients).ConfigureAwait(false);
         _lifetime.Dispose();
     }
 }
