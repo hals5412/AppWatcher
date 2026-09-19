@@ -136,3 +136,17 @@ Use a disposable test GUI that can intentionally block its UI thread.
 1. Verify UI, Agent and Elevated executables show the AppWatcher icon in Explorer properties.
 2. Verify the dashboard taskbar icon and healthy tray icon use the AppWatcher icon.
 3. Inspect 16, 32, 48 and 256 px presentations for clipping or illegibility.
+
+## Q. Reliability regression (isolated Windows user or VM only)
+
+1. Stop target A; pause target B; trigger Backoff on target C. Add/edit/remove another target and verify A remains stopped, B retains its pause deadline, and C retains its restart history and Backoff.
+2. With AttachExisting disabled, edit a running target name and verify its PID does not change and no duplicate process appears.
+3. Set a timed global maintenance window, let it expire, and verify eligible targets resume but manually stopped targets do not. Repeat after replacing a timed pause with an indefinite pause.
+4. Use tray Pause/Resume with both normal and administrator targets. Make one host unavailable and verify partial failure is visible while the successful side keeps its state.
+5. Stop while waiting for an automatic restart or Backoff expiry; verify no later launch. Refuse graceful close with forced termination disabled and verify the UI retains the running PID and reports failure.
+6. Attempt executable/privilege changes while running; verify rejection. Explicitly Stop, transfer privilege, and verify the destination remains stopped until Start.
+7. Deny access to the isolated event database, start the hosts, and verify target supervision and IPC continue. Restore access and verify DB logging can recover after the retry interval.
+8. Create a diagnostic ZIP containing only dummy token/password values. Inspect configuration, reconstructed DB and fallback files for residual secrets; verify the original historical database is unchanged.
+9. Repeat startup, coordinated shutdown and application restart using both distribution formats. Record manual results separately from automated test results.
+
+The automated suite uses fake processes and a controllable clock, plus a separate worker for cross-process configuration tests. It does not establish real WinForms, UAC, Task Scheduler or high/medium-integrity interoperability. Those checks remain manual release blockers until recorded on an isolated environment.

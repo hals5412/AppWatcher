@@ -177,3 +177,18 @@ AppWatcher.UI.exe --restart
 ```
 
 Published packages also include `stop-appwatcher.ps1` and `restart-appwatcher.ps1`. `--restart` prefers the registered Task Scheduler tasks so the Elevated helper can return without a new UAC prompt. If those tasks are not installed, AppWatcher falls back to direct launch and Windows may show UAC for the Elevated helper.
+
+## 信頼性とログの運用
+
+- 同一ホストの稼働中は、設定再読み込み・Pause解除・メンテナンス解除によって手動Stopを解除しません。再起動する場合はStartまたはRestartを明示します。
+- 設定再読み込みは変更された対象へ差分適用します。実行ファイルや権限の変更前は対象を明示的に停止してください。権限変更先でも停止状態を維持します。
+- Pauseの永続化は未対応です。AppWatcher自体を再起動した後は、起動設定が再評価されます。
+- トレイとダッシュボードの全体Pause／Resumeは両ホストへ送信し、片側が失敗した場合は通知します。
+- 設定はプロセス間ファイルロックと最新値への部分更新で保存します。ロック待ちが10秒を超えた場合は保存に失敗し、再試行は利用者が行います。
+- ログDBの障害は監視を停止させません。ログは最大1024件のキューで処理し、満杯時は超過件数をfallbackへ記録します。障害時のDB再試行は1分以上間隔を空けます。
+- 起動後と1時間ごとに古いログを整理します。`global.eventDatabaseMaxMegabytes`は既定100 MiB、最小10 MiBの整理目標です。容量超過時は古いイベントを削除し、必要に応じてDBを縮小します。厳密な瞬間上限ではなく、WALやロック競合により一時超過・縮小延期があります。
+- fallbackログは5 MiBで回転し、現在分と旧2世代を保持します。
+- 診断ZIPは設定・ログ中の`password`、`passwd`、`token`、`api-key`、`api_key`、`secret`形式の引数をマスクします。過去のログDBも新規DBへマスクして書き出します。任意形式の秘密情報の完全除去は保証しません。
+- 自動テストは独立プロジェクトです。テストランナーと補助プロセスは配布ZIPへ含めません。
+
+詳しい改修方針は[信頼性改善計画](docs/AppWatcher-reliability-improvement-plan.md)を参照してください。

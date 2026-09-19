@@ -52,7 +52,7 @@ Current commands include snapshot, reload, start, stop, restart, pause/resume an
 
 ## Configuration
 
-`ConfigService` performs serialized reads/writes, rotates three backups, writes to a temporary file and then replaces the live JSON file.
+`ConfigService` serializes reads, migration and writes across processes with an exclusive file lease (10-second acquisition timeout). It rotates three readable backups, uses a unique same-directory temporary file and replaces the live JSON file. `UpdateAsync` applies UI changes to the latest configuration while holding the lease.
 
 Configuration has an explicit schema version and migration pipeline. Older supported schemas are upgraded before use, while a configuration from a newer unsupported schema is rejected to avoid destructive downgrade behavior.
 
@@ -62,7 +62,7 @@ Both supervisor hosts filter the same configuration by `PrivilegeLevel`.
 
 `EventStore` uses Microsoft.Data.Sqlite. It enables WAL and `synchronous=NORMAL` and indexes timestamp and `(application_id, timestamp)`.
 
-`ResilientEventSink` treats log database failures as non-fatal.
+`ResilientEventSink` uses a bounded 1024-record queue so supervision does not wait for SQLite I/O. Database failures, including initialization failures, are non-fatal; retries are throttled to one minute. Overflow is summarized in the rotating fallback log. An hourly, file-lease-coordinated maintenance task enforces retention and a soft capacity target.
 
 ## Self-monitoring
 
@@ -83,3 +83,13 @@ The normal Agent does not try to elevate individual targets. Administrator appli
 The helper is elevated at logon through Task Scheduler, which avoids repeated UAC prompts on application restarts.
 
 Named-pipe servers use an explicit protected DACL that grants access to LocalSystem, built-in Administrators, and the current Windows user SID. No mandatory-integrity SACL is added, allowing the medium-integrity UI and the high-integrity helper for the same user to communicate while avoiding reliance on the process-default pipe ACL.
+
+## State preservation and tests
+
+Reload validates the complete candidate before applying changes by application ID. Existing supervisors retain manual-stop intent, pause deadlines and restart history. Executable/privilege changes require explicit Stop. Normal and elevated hosts both observe the previous configuration before UI privilege transfer; the destination registers the application stopped.
+
+Per-application operations and exit callbacks share a gate. Delayed recovery rechecks generation, pause and shutdown before launching. Background tasks are tracked and joined on disposal; snapshots are immutable published values. `IProcessRuntime`, `IManagedProcess` and `TimeProvider` permit deterministic tests without launching production targets.
+
+The existing ReloadConfiguration IPC command accepts an optional ConfigurationPreview for validation without applying it. All binaries should be replaced together; mixed-version hosts are not a supported upgrade state.
+
+Diagnostic export reads a consistent SELECT snapshot into a fresh sanitized database. It never copies raw database bytes on failure. Acquisition failures are listed in collection-notes.txt.

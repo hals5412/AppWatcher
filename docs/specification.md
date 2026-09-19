@@ -119,7 +119,7 @@ Default values:
 - Backoff: 15 min
 - Healthy reset: 30 min
 
-Manual dashboard `Stop` is intentional and suppresses restart.
+Manual dashboard `Stop` is intentional and suppresses restart until an explicit Start or Restart, including across configuration reload and maintenance resume within the same host lifetime.
 
 Automatic restart is evaluated after an unexpected exit according to the selected policy.
 
@@ -197,10 +197,10 @@ The dashboard can generate a ZIP containing:
 - sanitized configuration
 - host status snapshot
 - system/runtime information with machine/user names redacted
-- a consistent SQLite event-database snapshot when available
+- a consistent event snapshot reconstructed into a new database with supported secret arguments masked
 - fallback diagnostic log
 
-Common secret-style arguments such as `--password`, `--token`, `--api-key`, and `--secret` are masked.
+Supported password/passwd/token/api-key/api_key/secret arguments are masked for whitespace-separated, equals-separated and quoted values in configuration, structured event strings and fallback export. This also applies to historical event data; arbitrary secret formats are not guaranteed to be recognized. Failed database extraction is reported without copying the raw database.
 
 ## 14. v2 candidates
 
@@ -211,3 +211,9 @@ Common secret-style arguments such as `--password`, `--token`, `--api-key`, and 
 - Optional resource threshold checks
 - Child process observation without ownership
 - Diagnostic event export independent of raw SQLite files
+
+## Reliability and retention
+
+Configuration updates use a process-wide file lease and merge only the edited fields into the latest file. Full validation precedes reload; running or recovering targets must be explicitly stopped before changing executable or privilege. Unchanged targets retain their process handles and state.
+
+Retention runs after startup and hourly without blocking supervision. The database capacity setting is a soft target (100 MiB default, minimum 10 MiB); oldest rows are deleted in batches toward 90% used-page capacity when exceeded. Checkpoint/VACUUM are attempted only on capacity overflow. Contention may defer physical shrinking and WAL can temporarily exceed the target. Fallback logs rotate at 5 MiB, retaining the current file and two older generations.
