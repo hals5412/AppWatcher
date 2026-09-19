@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 using AppWatcher.Core;
@@ -982,7 +983,6 @@ internal sealed class MainForm : Form
         if (!await _refreshGate.WaitAsync(0)) return;
         try
         {
-            var selectedId = SelectedSnapshot()?.Id;
             var normalTask = _normalClient.SendAsync(new SupervisorRequest(SupervisorCommandType.GetSnapshot), TimeSpan.FromMilliseconds(900));
             var adminTask = _adminClient.SendAsync(new SupervisorRequest(SupervisorCommandType.GetSnapshot), TimeSpan.FromMilliseconds(900));
             await Task.WhenAll(normalTask, adminTask);
@@ -1018,6 +1018,12 @@ internal sealed class MainForm : Form
             // catches up (for example, while a save/reload is in flight).
             apps.AddRange(snapshots.Values);
 
+            // 通信待ちの間に利用者が変更したソート・選択も、更新直前に取得する。
+            var selectedId = SelectedSnapshot()?.Id;
+            var sortedColumn = _grid.SortedColumn;
+            var sortDirection = _grid.SortOrder == SortOrder.Descending
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
             _grid.Rows.Clear();
             foreach (var app in apps.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
             {
@@ -1034,7 +1040,21 @@ internal sealed class MainForm : Form
                 var row = _grid.Rows[rowIndex];
                 row.Tag = app;
                 ApplyStateStyle(row, app.State);
-                if (selectedId == app.Id) row.Selected = true;
+
+            }
+
+            if (sortedColumn is not null)
+                _grid.Sort(sortedColumn, sortDirection);
+
+            _grid.ClearSelection();
+            foreach (DataGridViewRow row in _grid.Rows)
+            {
+                if (row.Tag is ApplicationSnapshot app && app.Id == selectedId)
+                {
+                    _grid.CurrentCell = row.Cells[_grid.FirstDisplayedCell?.ColumnIndex ?? 0];
+                    row.Selected = true;
+                    break;
+                }
             }
 
             var healthy = apps.Count(a => a.State == AppRuntimeState.Healthy);
