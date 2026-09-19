@@ -106,12 +106,24 @@ To create a combined runnable folder:
 For a self-contained win-x64 package:
 
 ```powershell
-.\scripts\publish.ps1 -SelfContained
+.\scripts\publish.ps1 -SelfContained -PackageSuffix "-self-contained"
 ```
+
+## Download and update
+
+Open [GitHub Releases](https://github.com/hals5412/AppWatcher/releases) and choose the desired alpha prerelease. Both packages are for Windows x64:
+
+| File | Requirements |
+| --- | --- |
+| `AppWatcher-win-x64.zip` | .NET 10 Desktop Runtime (x64) installed separately. |
+| `AppWatcher-win-x64-self-contained.zip` | Includes the .NET runtime; larger download. |
+| `SHA256SUMS.txt` | SHA-256 checksums for both ZIPs. |
+
+Extract the entire ZIP into one folder and start `AppWatcher.UI.exe` as a normal user. To update, first use **Exit AppWatcher completely**, then replace the complete application file set so Agent, Elevated, UI, and Core come from the same version. Monitored applications are left running. Settings and logs remain in the separate data directory below. If the installation folder changes, install/repair the startup tasks again.
 
 ## First run
 
-1. Publish AppWatcher so `AppWatcher.Agent.exe`, `AppWatcher.Elevated.exe`, and `AppWatcher.UI.exe` are in the same folder.
+1. Extract a release ZIP or publish AppWatcher so `AppWatcher.Agent.exe`, `AppWatcher.Elevated.exe`, and `AppWatcher.UI.exe` are in the same folder.
 2. Start `AppWatcher.UI.exe`.
 3. Open **Tools → Install / repair startup tasks...**.
 4. Approve the one-time UAC prompt.
@@ -149,7 +161,7 @@ appwatcher-fallback.log
 
 Stopping AppWatcher itself **does not terminate monitored applications**. Removing an application from configuration also leaves the target process running.
 
-`Stop` from the dashboard is an intentional target stop and suppresses automatic restart. A later externally caused exit is treated according to that application's restart policy.
+`Stop` from the dashboard suppresses automatic restart until an explicit Start or Restart during the same host session. Resume and configuration reloads do not clear this intent, even if stopping the target failed.
 
 On Windows session-ending notification, AppWatcher marks shutdown in progress and suppresses new automatic launches.
 
@@ -178,17 +190,17 @@ AppWatcher.UI.exe --restart
 
 Published packages also include `stop-appwatcher.ps1` and `restart-appwatcher.ps1`. `--restart` prefers the registered Task Scheduler tasks so the Elevated helper can return without a new UAC prompt. If those tasks are not installed, AppWatcher falls back to direct launch and Windows may show UAC for the Elevated helper.
 
-## 信頼性とログの運用
+## Reliability and logging
 
-- 同一ホストの稼働中は、設定再読み込み・Pause解除・メンテナンス解除によって手動Stopを解除しません。再起動する場合はStartまたはRestartを明示します。
-- 設定再読み込みは変更された対象へ差分適用します。実行ファイルや権限の変更前は対象を明示的に停止してください。権限変更先でも停止状態を維持します。
-- Pauseの永続化は未対応です。AppWatcher自体を再起動した後は、起動設定が再評価されます。
-- トレイとダッシュボードの全体Pause／Resumeは両ホストへ送信し、片側が失敗した場合は通知します。
-- 設定はプロセス間ファイルロックと最新値への部分更新で保存します。ロック待ちが10秒を超えた場合は保存に失敗し、再試行は利用者が行います。
-- ログDBの障害は監視を停止させません。ログは最大1024件のキューで処理し、満杯時は超過件数をfallbackへ記録します。障害時のDB再試行は1分以上間隔を空けます。
-- 起動後と1時間ごとに古いログを整理します。`global.eventDatabaseMaxMegabytes`は既定100 MiB、最小10 MiBの整理目標です。容量超過時は古いイベントを削除し、必要に応じてDBを縮小します。厳密な瞬間上限ではなく、WALやロック競合により一時超過・縮小延期があります。
-- fallbackログは5 MiBで回転し、現在分と旧2世代を保持します。
-- 診断ZIPは設定・ログ中の`password`、`passwd`、`token`、`api-key`、`api_key`、`secret`形式の引数をマスクします。過去のログDBも新規DBへマスクして書き出します。任意形式の秘密情報の完全除去は保証しません。
-- 自動テストは独立プロジェクトです。テストランナーと補助プロセスは配布ZIPへ含めません。
+- While a host remains running, configuration reloads, Resume, and maintenance expiry preserve a manual Stop. Use Start or Restart explicitly to start that target again.
+- Configuration reloads apply changes by application ID, preserving tracked processes, pause deadlines, restart history, and backoff. Explicitly stop a target before changing its executable or privilege level; a privilege transfer also preserves its stopped state.
+- Pause and manual Stop are not persisted across host restarts. Startup settings are evaluated again when AppWatcher restarts.
+- Global Pause/Resume from either the tray or dashboard addresses both hosts and reports partial failures. An offline, unused Elevated helper is not started just for this operation.
+- Configuration uses a cross-process file lock and partial updates against the latest saved values. A lock wait exceeding 10 seconds fails the operation; retry manually.
+- Log database failures do not stop monitoring. Logging uses a queue of up to 1,024 events and reports overflow counts to the fallback log. Failed database attempts are retried no more than once per minute.
+- Old events are cleaned up after startup and hourly. `global.eventDatabaseMaxMegabytes` is a cleanup target, defaulting to 100 MiB with a minimum of 10 MiB. When exceeded, older events are deleted and the database is compacted when possible. This is not a strict instantaneous limit: WAL growth and lock contention can cause temporary excess usage or defer compaction.
+- The fallback log rotates at 5 MiB and retains the current file plus two older generations.
+- Diagnostic ZIPs mask supported command-line argument forms named `password`, `passwd`, `token`, `api-key`, `api_key`, and `secret`, including whitespace-separated, equals-separated, and quoted values. Historical database records are masked into a new diagnostic database; the original database is not changed. Arbitrary secrets are not guaranteed to be removed.
+- Automated tests are separate projects. Test runners and test helper processes are excluded from distribution ZIPs.
 
-詳しい改修方針は[信頼性改善計画](docs/AppWatcher-reliability-improvement-plan.md)を参照してください。
+See the [reliability improvement plan](docs/AppWatcher-reliability-improvement-plan.md) and [implementation and validation report](docs/AppWatcher-reliability-implementation-report.md) (Japanese). Real UI and normal/admin interaction checks in an isolated Windows environment, and before/after resource measurements, remain outstanding.

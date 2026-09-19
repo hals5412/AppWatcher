@@ -55,6 +55,18 @@ Agent と Elevated Helper は、どちらも**ログオン中ユーザーの対�
 - 同じ実行ファイルパスの重複登録防止。
 - AppWatcher自身の完全終了 / 再起動。
 
+## ダウンロードと更新
+
+[GitHub Releases](https://github.com/hals5412/AppWatcher/releases)から使用するalphaプレリリースを選びます。どちらもWindows x64向けです。
+
+| ファイル | 必要な環境 |
+| --- | --- |
+| `AppWatcher-win-x64.zip` | .NET 10 Desktop Runtime（x64）を別途インストール。 |
+| `AppWatcher-win-x64-self-contained.zip` | .NETランタイム同梱。ダウンロード容量は大きくなります。 |
+| `SHA256SUMS.txt` | 両ZIPのSHA-256チェックサム。 |
+
+ZIP全体を1つのフォルダへ展開し、`AppWatcher.UI.exe`を通常権限で起動します。更新時は先に **AppWatcherを完全終了** し、Agent・Elevated・UI・Coreが同じバージョンになるようアプリ一式を入れ替えてください。監視対象アプリは終了しません。設定とログは後述の別データフォルダに残ります。設置フォルダを変更した場合は、自動起動タスクを再インストール／修復してください。
+
 ## 初回起動
 
 ユーザーが起動する入口は **`AppWatcher.UI.exe`** です。UIは通常権限で起動してください。
@@ -152,7 +164,7 @@ AppWatcherは対象アプリ起動時に `CREATE_NO_WINDOW`、`DETACHED_PROCESS`
 
 self-containedのwin-x64版:
 
-    .\scripts\publish.ps1 -SelfContained
+    .\scripts\publish.ps1 -SelfContained -PackageSuffix "-self-contained"
 
 ## 現在のalpha版の制限
 
@@ -169,7 +181,7 @@ self-containedのwin-x64版:
 
 - 同一ホストの稼働中は、設定再読み込み・Pause解除・メンテナンス解除によって手動Stopを解除しません。再起動する場合はStartまたはRestartを明示します。
 - 設定再読み込みは変更された対象へ差分適用します。実行ファイルや権限の変更前は対象を明示的に停止してください。権限変更先でも停止状態を維持します。
-- Pauseの永続化は未対応です。AppWatcher自体を再起動した後は、起動設定が再評価されます。
+- Pauseと手動Stopの永続化は未対応です。AppWatcher自体を再起動した後は、起動設定が再評価されます。
 - トレイとダッシュボードの全体Pause／Resumeは両ホストへ送信し、片側が失敗した場合は通知します。
 - 設定はプロセス間ファイルロックと最新値への部分更新で保存します。ロック待ちが10秒を超えた場合は保存に失敗し、再試行は利用者が行います。
 - ログDBの障害は監視を停止させません。ログは最大1024件のキューで処理し、満杯時は超過件数をfallbackへ記録します。障害時のDB再試行は1分以上間隔を空けます。
@@ -178,4 +190,4 @@ self-containedのwin-x64版:
 - 診断ZIPは設定・ログ中の`password`、`passwd`、`token`、`api-key`、`api_key`、`secret`形式の引数をマスクします。過去のログDBも新規DBへマスクして書き出します。任意形式の秘密情報の完全除去は保証しません。
 - 自動テストは独立プロジェクトです。テストランナーと補助プロセスは配布ZIPへ含めません。
 
-詳しい改修方針は[信頼性改善計画](docs/AppWatcher-reliability-improvement-plan.md)を参照してください。
+詳しくは[信頼性改善計画](docs/AppWatcher-reliability-improvement-plan.md)と[実装・検証報告](docs/AppWatcher-reliability-implementation-report.md)を参照してください。隔離Windows環境での実UI・通常権限／管理者権限の組合せ確認と、変更前後のリソース消費実測は未実施です。
