@@ -30,7 +30,7 @@ Child processes are unmanaged by default. This preserves compatibility with desk
 
 ### 2.2 Event-driven when possible
 
-Process termination is observed through process handles / `Process.Exited`. AppWatcher must not continuously enumerate every Windows process merely to discover that a known process exited.
+Process termination for an attached target is observed through process handles / `Process.Exited`. To attach applications launched externally after AppWatcher starts, `AttachExisting` targets without an attached process are checked every five seconds by configured executable name, followed by the existing full-path identity check. AppWatcher must not inspect every Windows process on each interval merely to discover a known process exit.
 
 Periodic work is limited to features that inherently require it, such as GUI responsiveness checks.
 

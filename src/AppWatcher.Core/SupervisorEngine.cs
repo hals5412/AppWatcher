@@ -25,6 +25,7 @@ public sealed class SupervisorEngine : IAsyncDisposable
     private CancellationTokenSource? _maintenanceTimerCts;
     private AppWatcherConfiguration _configuration = new();
     private Task _logMaintenance = Task.CompletedTask;
+    private Task _existingProcessDiscovery = Task.CompletedTask;
     private readonly bool _ownsEvents;
     private readonly object _disposeLock = new();
     private Task? _disposeTask;
@@ -58,6 +59,8 @@ public sealed class SupervisorEngine : IAsyncDisposable
             processId = Environment.ProcessId,
             startedUtc = _startedUtc
         }), cancellationToken).ConfigureAwait(false);
+
+        _existingProcessDiscovery = DiscoverExistingProcessesAsync();
     }
 
     public async Task ReloadAsync(CancellationToken cancellationToken = default)
@@ -341,6 +344,7 @@ public sealed class SupervisorEngine : IAsyncDisposable
             _lifetime.Cancel();
             _maintenanceTimerCts?.Cancel();
             await Task.WhenAll(_maintenanceTasks).ConfigureAwait(false);
+            await _existingProcessDiscovery.ConfigureAwait(false);
             await _logMaintenance.ConfigureAwait(false);
 
             foreach (var pair in _supervisors.ToArray())
@@ -406,5 +410,26 @@ public sealed class SupervisorEngine : IAsyncDisposable
             } while (!_lifetime.IsCancellationRequested);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+    }
+
+    private async Task DiscoverExistingProcessesAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5), _time);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(_lifetime.Token).ConfigureAwait(false))
+            {
+                if (_shuttingDown) return;
+
+                foreach (var supervisor in _supervisors.Values.ToArray())
+                {
+                    if (_lifetime.IsCancellationRequested) return;
+                    await supervisor.TryAttachExistingAsync(_lifetime.Token).ConfigureAwait(false);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+        }
     }
 }

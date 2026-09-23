@@ -248,6 +248,12 @@
   <data name="Event_MonitoringResumed" xml:space="preserve">
     <value>監視再開</value>
   </data>
+  <data name="Event_ExistingProcessAttached" xml:space="preserve">
+    <value>既存プロセス接続</value>
+  </data>
+  <data name="Event_ExistingProcessDiscoveryFailed" xml:space="preserve">
+    <value>外部起動プロセス検出失敗</value>
+  </data>
   <data name="Event_ProcessExited" xml:space="preserve">
     <value>プロセス終了</value>
   </data>
@@ -454,6 +460,12 @@
   </data>
   <data name="Reason_ExistingProcessAttached" xml:space="preserve">
     <value>既存プロセスへ接続</value>
+  </data>
+  <data name="Reason_ProcessDiscoveryFailed" xml:space="preserve">
+    <value>外部起動プロセスを検出できませんでした</value>
+  </data>
+  <data name="Reason_ProcessAttachFailed" xml:space="preserve">
+    <value>外部起動プロセスへ接続できませんでした</value>
   </data>
   <data name="Reason_GlobalMaintenance" xml:space="preserve">
     <value>全体メンテナンス中</value>

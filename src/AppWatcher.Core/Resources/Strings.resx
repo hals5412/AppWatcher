@@ -248,6 +248,12 @@ Expected:
   <data name="Event_MonitoringResumed" xml:space="preserve">
     <value>Monitoring resumed</value>
   </data>
+  <data name="Event_ExistingProcessAttached" xml:space="preserve">
+    <value>Existing process attached</value>
+  </data>
+  <data name="Event_ExistingProcessDiscoveryFailed" xml:space="preserve">
+    <value>External process detection failed</value>
+  </data>
   <data name="Event_ProcessExited" xml:space="preserve">
     <value>Process exited</value>
   </data>
@@ -454,6 +460,12 @@ Managed applications will be left running.</value>
   </data>
   <data name="Reason_ExistingProcessAttached" xml:space="preserve">
     <value>Existing process attached</value>
+  </data>
+  <data name="Reason_ProcessDiscoveryFailed" xml:space="preserve">
+    <value>External process detection failed</value>
+  </data>
+  <data name="Reason_ProcessAttachFailed" xml:space="preserve">
+    <value>Could not attach to external process</value>
   </data>
   <data name="Reason_GlobalMaintenance" xml:space="preserve">
     <value>Global maintenance</value>

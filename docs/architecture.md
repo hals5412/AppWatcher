@@ -30,10 +30,13 @@ The supervisor:
 
 1. optionally finds an existing exact executable-path match;
 2. attaches a process handle;
-3. subscribes to process exit events;
-4. runs a periodic window responsiveness loop only when enabled;
-5. evaluates restart policy and loop protection after an unexpected exit;
-6. logs the event, decision, reason and result.
+3. when `AttachExisting` is enabled, checks for a matching external process every five seconds while no process is attached;
+4. subscribes to process exit events;
+5. runs a periodic window responsiveness loop only when enabled;
+6. evaluates restart policy and loop protection after an unexpected exit;
+7. logs the event, decision, reason and result.
+
+External discovery queries only the executable names configured for unattached targets and then verifies the full path. It does not inspect every process on each interval. Manual Stop suppresses discovery for that target until an explicit Start or Restart.
 
 `InteractiveProcessLauncher` uses normal interactive shell execution. No Job Object is assigned.
 

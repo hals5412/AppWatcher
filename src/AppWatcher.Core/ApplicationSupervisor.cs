@@ -32,6 +32,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
     private ApplicationSnapshot _snapshot;
     private bool _intentionalStop;
     private bool _disposed;
+    private DateTimeOffset _nextExistingDiscoveryFailureLogUtc;
     private AppRuntimeState _state = AppRuntimeState.Unknown;
     private string _lastEvent = "Initialized";
     private string? _lastReason;
@@ -130,6 +131,64 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
         {
             Volatile.Write(ref _snapshot, BuildSnapshot()); _gate.Release();
         }
+    }
+
+    public async Task<bool> TryAttachExistingAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (_disposed || !_definition.AttachExisting || _intentionalStop || _shutdownActive()) return false;
+            if (_process is not null && !HasExited(_process)) return false;
+
+            IManagedProcess? existing;
+            try
+            {
+                existing = _runtime.FindExisting(_definition);
+            }
+            catch (Exception ex)
+            {
+                await LogExistingDiscoveryFailureAsync(ex, cancellationToken).ConfigureAwait(false);
+                return false;
+            }
+
+            if (existing is null) return false;
+
+            try
+            {
+                await AttachProcessLockedAsync(existing, "ExistingProcessAttached", cancellationToken).ConfigureAwait(false);
+                // An externally launched instance supersedes any delayed automatic start.
+                ++_restartGeneration;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                if (ReferenceEquals(_process, existing)) DetachCurrentProcess();
+                else existing.Dispose();
+                _processStartedUtc = null;
+                SetState(AppRuntimeState.Failed, "ProcessAttachFailed", "ExternalProcessDiscovery");
+                await LogExistingDiscoveryFailureAsync(ex, cancellationToken).ConfigureAwait(false);
+                return false;
+            }
+            return true;
+        }
+        finally
+        {
+            Volatile.Write(ref _snapshot, BuildSnapshot());
+            _gate.Release();
+        }
+    }
+
+    private async Task LogExistingDiscoveryFailureAsync(Exception exception, CancellationToken cancellationToken)
+    {
+        var now = _time.GetUtcNow();
+        if (now < _nextExistingDiscoveryFailureLogUtc) return;
+        _nextExistingDiscoveryFailureLogUtc = now.AddMinutes(1);
+        await WriteEventAsync(AppLogLevel.Warning, "ExistingProcessDiscoveryFailed", "ProcessDiscoveryFailed",
+            new { exceptionType = exception.GetType().Name, exception.Message }, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task StartAsync(string reason = "ManualStart", CancellationToken cancellationToken = default)
