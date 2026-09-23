@@ -69,13 +69,13 @@ internal sealed class EventLogForm : Form
         var refresh = new Button { Text = Localization.T("ButtonRefresh"), AutoSize = true, Margin = new Padding(12, 2, 3, 0) };
         refresh.Click += async (_, _) => await RefreshAsync();
         filter.Controls.Add(refresh);
-        Controls.Add(filter);
 
         var split = new SplitContainer
         {
             Dock = DockStyle.Fill,
             Orientation = Orientation.Horizontal,
-            SplitterDistance = 400
+            SplitterDistance = 400,
+            Margin = Padding.Empty
         };
         ConfigureGrid();
         split.Panel1.Controls.Add(_grid);
@@ -85,7 +85,22 @@ internal sealed class EventLogForm : Form
         _details.ScrollBars = ScrollBars.Both;
         _details.Font = new Font(FontFamily.GenericMonospace, 9);
         split.Panel2.Controls.Add(_details);
-        Controls.Add(split);
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        filter.Dock = DockStyle.Fill;
+        filter.Margin = Padding.Empty;
+        layout.Controls.Add(filter, 0, 0);
+        layout.Controls.Add(split, 0, 1);
+        Controls.Add(layout);
 
         _appFilter.TextChanged += (_, _) => ApplyClientFilter();
         Shown += async (_, _) => await RefreshAsync();
