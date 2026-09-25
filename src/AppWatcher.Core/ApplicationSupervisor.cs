@@ -120,7 +120,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
 
             if (_definition.StartWithWatcher)
             {
-                await StartProcessLockedAsync("WatcherStartup", cancellationToken).ConfigureAwait(false);
+                await StartProcessLockedAsync("WatcherStartup", cancellationToken, checkExisting: false).ConfigureAwait(false);
             }
             else
             {
@@ -421,7 +421,25 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
     private bool IsApplicationPaused => _pauseIndefinite || _pauseUntilUtc is not null;
     private bool IsPausedEffective => IsApplicationPaused || _globalPauseActive() || !_definition.MonitoringEnabled;
 
-    private async Task StartProcessLockedAsync(string reason, CancellationToken cancellationToken)
+    private async Task<bool> TryAttachBeforeLaunchLockedAsync(CancellationToken cancellationToken)
+    {
+        IManagedProcess? existing;
+        try
+        {
+            existing = _runtime.FindExisting(_definition);
+        }
+        catch (Exception ex)
+        {
+            // Discovery failure must not block recovery; fall back to launching.
+            await LogExistingDiscoveryFailureAsync(ex, cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+        if (existing is null) return false;
+        await AttachProcessLockedAsync(existing, "ExistingProcessAttached", cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    private async Task StartProcessLockedAsync(string reason, CancellationToken cancellationToken, bool checkExisting = true)
     {
         if (_intentionalStop || _disposed) return;
         if (_shutdownActive())
@@ -437,6 +455,10 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
         }
 
         if (_process is not null && !HasExited(_process)) return;
+
+        // A user or the target itself (self-update, single-instance hand-off) may have started
+        // an instance during the restart delay. Attach to it instead of launching a duplicate.
+        if (checkExisting && _definition.AttachExisting && await TryAttachBeforeLaunchLockedAsync(cancellationToken).ConfigureAwait(false)) return;
 
         SetState(AppRuntimeState.Starting, "StartRequested", reason);
         _pendingStartup = false;
@@ -671,6 +693,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
     private async Task HangMonitorLoopAsync(IManagedProcess process, CancellationToken cancellationToken)
     {
         DateTimeOffset? unresponsiveSince = null;
+        var hangReported = false;
         var interval = TimeSpan.FromSeconds(Math.Max(1, _definition.HangCheckIntervalSeconds));
         using var timer = new PeriodicTimer(interval, _time);
 
@@ -685,6 +708,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
                     if (_intentionalStop || IsPausedEffective || _shutdownActive())
                     {
                         unresponsiveSince = null;
+                        hangReported = false;
                         continue;
                     }
                     if (_processStartedUtc is not null && _time.GetUtcNow() - _processStartedUtc < TimeSpan.FromSeconds(Math.Max(0, _definition.StartupGraceSeconds)))
@@ -695,7 +719,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
                     bool? responsive;
                     try { responsive = process.IsWindowResponsive(); }
                     catch { continue; }
-                    if (responsive is null) { unresponsiveSince = null; continue; }
+                    if (responsive is null) { unresponsiveSince = null; hangReported = false; continue; }
                     if (responsive == true)
                     {
                         if (_state == AppRuntimeState.Unresponsive)
@@ -704,6 +728,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
                             await WriteEventAsync(AppLogLevel.Information, "WindowResponsive", "RecoveredBeforeTimeout", null, cancellationToken).ConfigureAwait(false);
                         }
                         unresponsiveSince = null;
+                        hangReported = false;
                         continue;
                     }
 
@@ -723,11 +748,17 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
                         continue;
                     }
 
+                    if (hangReported) continue;
+                    hangReported = true;
                     await WriteEventAsync(AppLogLevel.Warning, "HangDetected", "HangTimeoutExceeded", new
                     {
                         processId = process.Id,
-                        timeoutSeconds = _definition.HangTimeoutSeconds
+                        timeoutSeconds = _definition.HangTimeoutSeconds,
+                        action = _definition.HangAction.ToString()
                     }, cancellationToken).ConfigureAwait(false);
+
+                    // LogOnly keeps a busy-but-alive target (for example during recording) running.
+                    if (_definition.HangAction != HangAction.Restart) continue;
 
                     try
                     {

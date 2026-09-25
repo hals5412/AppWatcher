@@ -7,7 +7,9 @@ public static class ConfigurationSchema
     // Schema 1 is the format used by AppWatcher alpha.1 through alpha.14.
     // Schema 2 introduces an explicit migration pipeline and canonicalizes
     // collections, strings and application IDs after deserialization.
-    public const int CurrentVersion = 2;
+    // Schema 3 adds HangAction. Hang detection used to always force-restart,
+    // so migrated applications with hang detection enabled keep Restart.
+    public const int CurrentVersion = 3;
     public const int OldestSupportedVersion = 1;
 }
 
@@ -66,6 +68,7 @@ internal static class ConfigurationMigrator
             version = version switch
             {
                 1 => MigrateV1ToV2(configuration),
+                2 => MigrateV2ToV3(configuration),
                 _ => throw new InvalidDataException(
                     $"No configuration migration exists from schema version {version}.")
             };
@@ -118,6 +121,16 @@ internal static class ConfigurationMigrator
         NormalizeCurrent(configuration);
         configuration.SchemaVersion = 2;
         return 2;
+    }
+
+    private static int MigrateV2ToV3(AppWatcherConfiguration configuration)
+    {
+        foreach (var application in configuration.Applications)
+        {
+            application.HangAction = application.DetectHangs ? HangAction.Restart : HangAction.LogOnly;
+        }
+        configuration.SchemaVersion = 3;
+        return 3;
     }
 
     private static void NormalizeCurrent(AppWatcherConfiguration configuration)

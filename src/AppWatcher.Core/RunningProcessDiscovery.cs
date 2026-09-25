@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 
 namespace AppWatcher.Core;
@@ -94,8 +95,27 @@ internal static class RunningProcessDiscovery
         out string executablePath,
         out PrivilegeLevel privilege)
     {
+        return TryInspect(processId, includeUser: false, out executablePath, out privilege, out _);
+    }
+
+    public static bool TryGetIdentity(int processId, int sessionId, out ProcessIdentity identity)
+    {
+        identity = null!;
+        if (!TryInspect(processId, includeUser: true, out var path, out var privilege, out var userSid)) return false;
+        identity = new ProcessIdentity(path, privilege, userSid, sessionId);
+        return true;
+    }
+
+    private static bool TryInspect(
+        int processId,
+        bool includeUser,
+        out string executablePath,
+        out PrivilegeLevel privilege,
+        out string? userSid)
+    {
         executablePath = string.Empty;
         privilege = PrivilegeLevel.Normal;
+        userSid = null;
 
         var processHandle = OpenProcess(
             ProcessQueryLimitedInformation,
@@ -138,6 +158,11 @@ internal static class RunningProcessDiscovery
                     return false;
                 }
 
+                if (includeUser && !TryGetTokenUser(tokenHandle, out userSid))
+                {
+                    return false;
+                }
+
                 executablePath = pathBuffer.ToString();
                 privilege = elevation.TokenIsElevated != 0
                     ? PrivilegeLevel.Administrator
@@ -155,6 +180,30 @@ internal static class RunningProcessDiscovery
         }
     }
 
+    private static bool TryGetTokenUser(IntPtr tokenHandle, out string? userSid)
+    {
+        userSid = null;
+        GetTokenInformation(tokenHandle, TokenInformationClass.TokenUser, IntPtr.Zero, 0, out var length);
+        if (length <= 0) return false;
+
+        var buffer = Marshal.AllocHGlobal(length);
+        try
+        {
+            if (!GetTokenInformation(tokenHandle, TokenInformationClass.TokenUser, buffer, length, out _))
+            {
+                return false;
+            }
+
+            // TOKEN_USER starts with SID_AND_ATTRIBUTES, whose first field is the PSID.
+            userSid = new SecurityIdentifier(Marshal.ReadIntPtr(buffer)).Value;
+            return true;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct TokenElevation
     {
@@ -163,6 +212,7 @@ internal static class RunningProcessDiscovery
 
     private enum TokenInformationClass
     {
+        TokenUser = 1,
         TokenElevation = 20
     }
 
@@ -193,6 +243,15 @@ internal static class RunningProcessDiscovery
         IntPtr tokenHandle,
         TokenInformationClass tokenInformationClass,
         out TokenElevation tokenInformation,
+        int tokenInformationLength,
+        out int returnLength);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetTokenInformation(
+        IntPtr tokenHandle,
+        TokenInformationClass tokenInformationClass,
+        IntPtr tokenInformation,
         int tokenInformationLength,
         out int returnLength);
 

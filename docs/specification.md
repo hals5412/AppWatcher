@@ -95,6 +95,7 @@ Required or supported settings:
 - Hang detection enable
 - Hang timeout
 - Hang check interval
+- Hang action (`LogOnly` or `Restart`; default `LogOnly`)
 - Startup grace period
 - Restart-loop protection enable
 - Maximum restarts in time window
@@ -105,7 +106,7 @@ Required or supported settings:
 - Child process policy (v1 UI default and only supported mode: `Unmanaged`)
 - Per-application log level
 
-Default process identity match is full executable path, not just executable file name.
+Default process identity match is full executable path, not just executable file name. An existing instance must also run in the current session, under the current user, and at the configured privilege level. A same-path instance at a different privilege level is treated as a different application.
 
 ## 6. Restart semantics
 
@@ -123,11 +124,15 @@ Manual dashboard `Stop` is intentional and suppresses restart until an explicit 
 
 Automatic restart is evaluated after an unexpected exit according to the selected policy.
 
+When `AttachExisting` is enabled, AppWatcher checks for a matching instance again immediately before an automatic or manual launch. An instance started during the restart delay (by the user, or by the target itself) is attached instead of launching a duplicate.
+
 ## 7. Hang detection
 
 Only applications with hang detection enabled are periodically checked.
 
-A window is not killed after one slow response. The state may become `Unresponsive`, but recovery is attempted only after the configured timeout has elapsed continuously.
+A window is not killed after one slow response. The state may become `Unresponsive`, and `HangDetected` is logged once the configured timeout has elapsed continuously.
+
+With `HangAction = LogOnly` (default for new applications) the target keeps running and stays `Unresponsive` until its window responds again. With `HangAction = Restart` the parent process is terminated and the normal restart policy applies.
 
 Child processes are not killed as part of hang recovery.
 
@@ -188,7 +193,7 @@ Closing AppWatcher hosts does not kill target processes.
 
 Configuration is JSON under `%LOCALAPPDATA%\AppWatcher`. Three generations of configuration backups are maintained. If the main file cannot be read, backups are tried in order.
 
-The configuration format is versioned. Schema 1 and pre-versioned files are migrated to the current schema before use, with the exact pre-migration file preserved as the newest backup. A configuration whose schema is newer than the running AppWatcher build supports is rejected instead of silently falling back to an older backup.
+The configuration format is versioned. Schema 1, schema 2 and pre-versioned files are migrated to the current schema (3) before use; applications that had hang detection enabled keep the previous force-restart behavior as `HangAction = Restart`, with the exact pre-migration file preserved as the newest backup. A configuration whose schema is newer than the running AppWatcher build supports is rejected instead of silently falling back to an older backup.
 
 ## 13. Diagnostics
 

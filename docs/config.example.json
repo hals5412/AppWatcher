@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "applications": [
     {
       "id": "11111111-1111-1111-1111-111111111111",
@@ -16,6 +16,7 @@
       "detectHangs": true,
       "hangTimeoutSeconds": 60,
       "hangCheckIntervalSeconds": 10,
+      "hangAction": "LogOnly",
       "startupGraceSeconds": 15,
       "restartLoopProtectionEnabled": true,
       "maxRestarts": 5,

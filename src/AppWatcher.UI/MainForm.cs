@@ -739,6 +739,11 @@ internal sealed class MainForm : Form
         {
             issues.Add(Localization.T(mismatchResource));
         }
+
+        if (!StartupTaskPolicy.LaunchesTargetsAtNormalPriority(info.Priority))
+        {
+            issues.Add(Localization.T("StartupSelfCheckTaskPriorityLow"));
+        }
     }
 
     private async Task ShowStartupSelfCheckDetailsAsync()
@@ -827,7 +832,8 @@ internal sealed class MainForm : Form
         info.Installed &&
         info.Enabled &&
         string.IsNullOrWhiteSpace(info.Error) &&
-        StartupTaskRegistrationMatches(info, expectedExecutable);
+        StartupTaskRegistrationMatches(info, expectedExecutable) &&
+        StartupTaskPolicy.LaunchesTargetsAtNormalPriority(info.Priority);
 
     private static bool StartupTaskRegistrationMatches(
         StartupTaskInfo info,

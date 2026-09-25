@@ -55,8 +55,15 @@ internal sealed class MemoryEvents : IEventSink
 internal sealed class FakeRuntime(TestClock clock) : IProcessRuntime
 {
     public List<FakeProcess> Processes { get; } = [];
+    // AppWatcherが起動していない外部インスタンス。Launchesには数えない。
+    public List<FakeProcess> External { get; } = [];
+    public bool FindExistingFails { get; set; }
     public int Launches => Processes.Count;
-    public IManagedProcess? FindExisting(ApplicationDefinition definition) => Processes.LastOrDefault(p => !p.HasExited);
+    public IManagedProcess? FindExisting(ApplicationDefinition definition)
+    {
+        if (FindExistingFails) throw new InvalidOperationException("Discovery failed.");
+        return Processes.Concat(External).LastOrDefault(p => !p.HasExited);
+    }
     public IManagedProcess Launch(ApplicationDefinition definition)
     {
         var process = new FakeProcess(100 + Launches, clock.GetUtcNow());
@@ -74,7 +81,8 @@ internal sealed class FakeProcess(int id, DateTimeOffset started) : IManagedProc
     public bool KillFails { get; set; }
     public event EventHandler? Exited;
     public void ObserveExit() { if (HasExited) Exited?.Invoke(this, EventArgs.Empty); }
-    public bool? IsWindowResponsive() => true;
+    public bool? Responsive { get; set; } = true;
+    public bool? IsWindowResponsive() => Responsive;
     public bool CloseMainWindow() => false;
     public void Kill() { if (!KillFails) Exit(0); }
     public void Exit(int code) { HasExited = true; ExitCode = code; Exited?.Invoke(this, EventArgs.Empty); }

@@ -10,7 +10,8 @@ internal sealed record StartupTaskInfo(
     int LastTaskResult,
     string? ExecutablePath,
     string? WorkingDirectory,
-    string? Error = null);
+    string? Error = null,
+    int Priority = StartupTaskPolicy.TaskSchedulerDefaultPriority);
 
 internal sealed record StartupTasksStatus(
     StartupTaskInfo Agent,
@@ -110,6 +111,16 @@ internal static class TaskSchedulerInstaller
             dynamic task = folder.GetTask(taskName);
             string? executablePath = null;
             string? workingDirectory = null;
+            var priority = StartupTaskPolicy.TaskSchedulerDefaultPriority;
+
+            try
+            {
+                priority = (int)task.Definition.Settings.Priority;
+            }
+            catch
+            {
+                // Keep the default when the setting cannot be read.
+            }
 
             try
             {
@@ -129,7 +140,8 @@ internal static class TaskSchedulerInstaller
                 (int)task.State,
                 (int)task.LastTaskResult,
                 executablePath,
-                workingDirectory);
+                workingDirectory,
+                Priority: priority);
         }
         catch
         {
@@ -194,6 +206,8 @@ internal static class TaskSchedulerInstaller
         task.Settings.StopIfGoingOnBatteries = false;
         task.Settings.ExecutionTimeLimit = "PT0S";
         task.Settings.MultipleInstances = 2; // IgnoreNew
+        // Without this the host runs BelowNormal and every restarted target inherits it.
+        task.Settings.Priority = StartupTaskPolicy.TaskPriority;
 
         dynamic trigger = task.Triggers.Create(TaskTriggerLogon);
         trigger.UserId = user;

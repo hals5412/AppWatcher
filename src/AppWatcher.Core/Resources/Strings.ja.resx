@@ -313,6 +313,15 @@
   <data name="FieldGracefulShutdownTimeout" xml:space="preserve">
     <value>通常終了の待機時間（秒）</value>
   </data>
+  <data name="FieldHangAction" xml:space="preserve">
+    <value>応答なし時の動作</value>
+  </data>
+  <data name="HangAction_LogOnly" xml:space="preserve">
+    <value>記録のみ（終了させない）</value>
+  </data>
+  <data name="HangAction_Restart" xml:space="preserve">
+    <value>強制終了して再起動</value>
+  </data>
   <data name="FieldHangCheckIntervalSeconds" xml:space="preserve">
     <value>応答確認間隔（秒）</value>
   </data>
@@ -929,6 +938,9 @@ AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監�
   </data>
   <data name="StartupSelfCheckElevatedTaskRegistrationMismatch" xml:space="preserve">
     <value>管理者Helperの自動起動タスクが現在とは別のAppWatcherフォルダーを参照しています。</value>
+  </data>
+  <data name="StartupSelfCheckTaskPriorityLow" xml:space="preserve">
+    <value>自動起動タスクの優先度が既定の「低」のため、再起動したアプリが通常より低い優先度で動作します。「ツール」→「自動起動タスクをインストール／修復...」を実行してください。</value>
   </data>
   <data name="StartupSelfCheckAgentOffline" xml:space="preserve">
     <value>AppWatcher Agentがオフラインです。</value>

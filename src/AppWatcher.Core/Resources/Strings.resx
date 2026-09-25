@@ -313,6 +313,15 @@ Managed applications will be left running.</value>
   <data name="FieldGracefulShutdownTimeout" xml:space="preserve">
     <value>Graceful shutdown timeout</value>
   </data>
+  <data name="FieldHangAction" xml:space="preserve">
+    <value>When unresponsive</value>
+  </data>
+  <data name="HangAction_LogOnly" xml:space="preserve">
+    <value>Log only (keep running)</value>
+  </data>
+  <data name="HangAction_Restart" xml:space="preserve">
+    <value>Force terminate and restart</value>
+  </data>
   <data name="FieldHangCheckIntervalSeconds" xml:space="preserve">
     <value>Hang check interval (sec)</value>
   </data>
@@ -929,6 +938,9 @@ Use Tools &gt; Install / repair startup tasks to repair missing, disabled, or st
   </data>
   <data name="StartupSelfCheckElevatedTaskRegistrationMismatch" xml:space="preserve">
     <value>The administrator helper startup task points to a different AppWatcher folder.</value>
+  </data>
+  <data name="StartupSelfCheckTaskPriorityLow" xml:space="preserve">
+    <value>A startup task uses the low default priority, so restarted applications run at below-normal priority. Run Tools &gt; Install / repair startup tasks...</value>
   </data>
   <data name="StartupSelfCheckAgentOffline" xml:space="preserve">
     <value>The AppWatcher Agent is offline.</value>

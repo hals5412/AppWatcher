@@ -18,6 +18,7 @@ internal sealed class AppEditForm : Form
     private readonly CheckBox _detectHangs = new() { Text = Localization.T("DetectUnresponsiveWindow"), AutoSize = true };
     private readonly NumericUpDown _hangTimeout = Number(5, 3600);
     private readonly NumericUpDown _hangInterval = Number(1, 300);
+    private readonly ComboBox _hangAction = new();
     private readonly NumericUpDown _startupGrace = Number(0, 3600);
 
     private readonly CheckBox _loopProtection = new() { Text = Localization.T("EnableRestartLoopProtection"), AutoSize = true };
@@ -50,6 +51,7 @@ internal sealed class AppEditForm : Form
 
         BindEnum(_privilege, Enum.GetValues<PrivilegeLevel>(), Localization.PrivilegeText);
         BindEnum(_restartPolicy, Enum.GetValues<RestartPolicy>(), Localization.RestartPolicyText);
+        BindEnum(_hangAction, Enum.GetValues<HangAction>(), Localization.HangActionText);
         BindEnum(_childPolicy, new[] { ChildProcessPolicy.Unmanaged }, Localization.ChildProcessPolicyText);
         BindEnum(_logLevel, Enum.GetValues<AppLogLevel>(), Localization.LogLevelText);
 
@@ -148,6 +150,7 @@ internal sealed class AppEditForm : Form
         AddFullRow(table, _detectHangs);
         AddRow(table, Localization.T("FieldHangTimeoutSeconds"), _hangTimeout);
         AddRow(table, Localization.T("FieldHangCheckIntervalSeconds"), _hangInterval);
+        AddRow(table, Localization.T("FieldHangAction"), _hangAction);
         AddRow(table, Localization.T("FieldStartupGraceSeconds"), _startupGrace);
         AddFullRow(table, _loopProtection);
         AddRow(table, Localization.T("FieldMaxRestarts"), _maxRestarts);
@@ -310,6 +313,7 @@ internal sealed class AppEditForm : Form
         _detectHangs.Checked = d.DetectHangs;
         _hangTimeout.Value = Clamp(_hangTimeout, d.HangTimeoutSeconds);
         _hangInterval.Value = Clamp(_hangInterval, d.HangCheckIntervalSeconds);
+        SelectEnum(_hangAction, d.HangAction);
         _startupGrace.Value = Clamp(_startupGrace, d.StartupGraceSeconds);
         _loopProtection.Checked = d.RestartLoopProtectionEnabled;
         _maxRestarts.Value = Clamp(_maxRestarts, d.MaxRestarts);
@@ -341,6 +345,7 @@ internal sealed class AppEditForm : Form
         DetectHangs = _detectHangs.Checked,
         HangTimeoutSeconds = (int)_hangTimeout.Value,
         HangCheckIntervalSeconds = (int)_hangInterval.Value,
+        HangAction = SelectedEnum(_hangAction, HangAction.LogOnly),
         StartupGraceSeconds = (int)_startupGrace.Value,
         RestartLoopProtectionEnabled = _loopProtection.Checked,
         MaxRestarts = (int)_maxRestarts.Value,

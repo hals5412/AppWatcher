@@ -41,6 +41,13 @@ public enum RestartPolicy
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
+public enum HangAction
+{
+    LogOnly,
+    Restart
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ChildProcessPolicy
 {
     Unmanaged,
@@ -99,6 +106,7 @@ public sealed class ApplicationDefinition
     public bool DetectHangs { get; set; } = true;
     public int HangTimeoutSeconds { get; set; } = 60;
     public int HangCheckIntervalSeconds { get; set; } = 10;
+    public HangAction HangAction { get; set; } = HangAction.LogOnly;
     public int StartupGraceSeconds { get; set; } = 15;
     public bool RestartLoopProtectionEnabled { get; set; } = true;
     public int MaxRestarts { get; set; } = 5;

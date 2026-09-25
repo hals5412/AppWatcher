@@ -35,7 +35,7 @@ public sealed class ConfigConcurrencyTests
         foreach (var file in Directory.GetFiles(directory.Path, "*.json"))
         {
             using var json = JsonDocument.Parse(await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
-            Assert.Equal(2, json.RootElement.GetProperty("schemaVersion").GetInt32());
+            Assert.Equal(ConfigurationSchema.CurrentVersion, json.RootElement.GetProperty("schemaVersion").GetInt32());
         }
     }
 

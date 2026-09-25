@@ -39,7 +39,7 @@ The Agent and Elevated helper run in the **interactive logged-on user session**.
 - Interactive process launch with normal windows; no hidden desktop / Session 0 / Job Object.
 - Restart on unexpected exit.
 - Configurable restart delay.
-- GUI-hang checking with a startup grace period and timeout.
+- GUI-hang checking with a startup grace period and timeout; per-application action (log only by default, or force-restart).
 - Restart-loop protection and backoff.
 - Per-application timed or indefinite pause.
 - Global maintenance mode.
@@ -133,6 +133,8 @@ The startup installer creates two Task Scheduler tasks under `\AppWatcher`:
 
 - `Agent`: interactive normal-user token.
 - `Elevated`: interactive token with highest privileges.
+
+Both tasks are registered at normal priority. Task Scheduler's default priority runs the hosts below normal, and restarted applications would inherit it. Tasks registered by alpha.22 or earlier are flagged by the startup self-check; run **Install / repair startup tasks...** again.
 
 This avoids a UAC prompt every time an administrator application has to be restarted, while still keeping it in the logged-on desktop session.
 

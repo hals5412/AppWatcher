@@ -44,6 +44,7 @@ public static class Localization
     public static string StateText(AppRuntimeState value) => T($"State_{value}");
     public static string PrivilegeText(PrivilegeLevel value) => T($"Privilege_{value}");
     public static string RestartPolicyText(RestartPolicy value) => T($"RestartPolicy_{value}");
+    public static string HangActionText(HangAction value) => T($"HangAction_{value}");
     public static string ChildProcessPolicyText(ChildProcessPolicy value) => T($"ChildProcessPolicy_{value}");
     public static string LogLevelText(AppLogLevel value) => T($"LogLevel_{value}");
 

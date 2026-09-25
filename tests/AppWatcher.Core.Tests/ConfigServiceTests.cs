@@ -165,6 +165,46 @@ public sealed class ConfigServiceTests
     }
 
     [Fact]
+    public async Task LoadMigratesSchemaTwoHangDetectionToRestartAction()
+    {
+        using var temp = new TempDirectory();
+        var service = new ConfigService(temp.Path);
+
+        // Schema 2 には hangAction がなく、応答なし検出は常に強制終了だった。
+        var schemaTwoJson = """
+            {
+              "schemaVersion": 2,
+              "applications": [
+                { "name": "Detects", "executablePath": "C:\\Apps\\A.exe", "detectHangs": true },
+                { "name": "Ignores", "executablePath": "C:\\Apps\\B.exe", "detectHangs": false }
+              ]
+            }
+            """;
+        await File.WriteAllTextAsync(Path.Combine(temp.Path, "config.json"), schemaTwoJson, TestContext.Current.CancellationToken);
+
+        var loaded = await service.LoadAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(ConfigurationSchema.CurrentVersion, loaded.SchemaVersion);
+        Assert.Equal(HangAction.Restart, loaded.Applications.Single(a => a.Name == "Detects").HangAction);
+        Assert.Equal(HangAction.LogOnly, loaded.Applications.Single(a => a.Name == "Ignores").HangAction);
+    }
+
+    [Fact]
+    public async Task LoadKeepsExplicitHangActionInCurrentSchema()
+    {
+        using var temp = new TempDirectory();
+        var service = new ConfigService(temp.Path);
+        var configuration = CreateConfiguration("Current");
+        configuration.Applications[0].DetectHangs = true;
+        configuration.Applications[0].HangAction = HangAction.LogOnly;
+        await service.SaveAsync(configuration, TestContext.Current.CancellationToken);
+
+        var loaded = await service.LoadAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(HangAction.LogOnly, Assert.Single(loaded.Applications).HangAction);
+    }
+
+    [Fact]
     public async Task LoadTreatsMissingSchemaVersionAsLegacySchemaOne()
     {
         using var temp = new TempDirectory();

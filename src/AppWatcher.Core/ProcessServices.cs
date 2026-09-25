@@ -1,15 +1,21 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 
 namespace AppWatcher.Core;
 
+// 権限・ユーザー・セッションまで一致した場合だけ同じ監視対象とみなす。
+public sealed record ProcessIdentity(string ExecutablePath, PrivilegeLevel Privilege, string? UserSid, int SessionId);
+
 public sealed class ProcessMatcher
 {
+    private readonly string? _currentUserSid = CurrentUserSid();
+    private readonly int _currentSessionId = CurrentSessionId();
+
     public Process? FindExisting(ApplicationDefinition definition)
     {
         if (string.IsNullOrWhiteSpace(definition.ExecutablePath)) return null;
 
-        var targetPath = NormalizePath(definition.ExecutablePath);
         var processName = Path.GetFileNameWithoutExtension(definition.ExecutablePath);
         if (string.IsNullOrWhiteSpace(processName)) return null;
 
@@ -18,16 +24,15 @@ public sealed class ProcessMatcher
             var matched = false;
             try
             {
-                var path = process.MainModule?.FileName;
-                matched = path is not null && string.Equals(NormalizePath(path), targetPath, StringComparison.OrdinalIgnoreCase);
-                if (matched)
-                {
-                    return process;
-                }
+                // QueryFullProcessImageName needs only PROCESS_QUERY_LIMITED_INFORMATION and,
+                // unlike MainModule, does not read the target's module list.
+                matched = RunningProcessDiscovery.TryGetIdentity(process.Id, process.SessionId, out var identity) &&
+                          IsMatch(identity, definition, _currentUserSid, _currentSessionId);
+                if (matched) return process;
             }
             catch
             {
-                // Access can fail for a process at a different integrity level.
+                // Processes can exit or become inaccessible while enumerating.
             }
             finally
             {
@@ -36,6 +41,26 @@ public sealed class ProcessMatcher
         }
 
         return null;
+    }
+
+    public static bool IsMatch(ProcessIdentity candidate, ApplicationDefinition definition, string? currentUserSid, int currentSessionId)
+    {
+        if (candidate.SessionId != currentSessionId) return false;
+        if (candidate.Privilege != definition.Privilege) return false;
+        if (currentUserSid is not null && !string.Equals(candidate.UserSid, currentUserSid, StringComparison.OrdinalIgnoreCase)) return false;
+        return string.Equals(NormalizePath(candidate.ExecutablePath), NormalizePath(definition.ExecutablePath), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? CurrentUserSid()
+    {
+        try { return WindowsIdentity.GetCurrent().User?.Value; }
+        catch { return null; }
+    }
+
+    private static int CurrentSessionId()
+    {
+        using var current = Process.GetCurrentProcess();
+        return current.SessionId;
     }
 
     private static string NormalizePath(string path)
@@ -72,7 +97,28 @@ public sealed class InteractiveProcessLauncher
         // Do not use CREATE_NO_WINDOW, DETACHED_PROCESS, hidden desktops, Job Objects,
         // or service/session-0 launch paths. The child must behave like a normal
         // interactive desktop application and must be free to create its own GUI children.
-        return Process.Start(startInfo) ?? throw new InvalidOperationException("Process.Start returned null.");
+        var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Process.Start returned null.");
+        RaiseInheritedLowPriority(process);
+        return process;
+    }
+
+    // A host started by an older startup task runs BelowNormal, which the child inherits.
+    // Re-registering the task is the real fix; this keeps restarted targets usable meanwhile.
+    private static void RaiseInheritedLowPriority(Process process)
+    {
+        try
+        {
+            using var current = Process.GetCurrentProcess();
+            if (current.PriorityClass is ProcessPriorityClass.BelowNormal or ProcessPriorityClass.Idle &&
+                process.PriorityClass == current.PriorityClass)
+            {
+                process.PriorityClass = ProcessPriorityClass.Normal;
+            }
+        }
+        catch
+        {
+            // The target may have exited or changed its own priority already.
+        }
     }
 }
 
