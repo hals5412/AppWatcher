@@ -36,6 +36,9 @@ internal sealed class RunningApplicationsForm : Form
             RowCount = 4,
             Padding = new Padding(10)
         };
+        // 列幅をウィンドウに合わせる。未指定だと説明文の1行分の幅まで列が広がり、
+        // 絞り込み欄・一覧・右下のボタンがウィンドウ外へはみ出す。
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
