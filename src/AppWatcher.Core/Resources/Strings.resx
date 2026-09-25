@@ -69,9 +69,6 @@
   <data name="CannotSave" xml:space="preserve">
     <value>Cannot save</value>
   </data>
-  <data name="CheckForUpdates" xml:space="preserve">
-    <value>Check for updates</value>
-  </data>
   <data name="ChildProcessPolicyInfo" xml:space="preserve">
     <value>Recommended: leave child processes unmanaged. This preserves compatibility when monitored applications launch other interactive GUI processes.</value>
   </data>
@@ -217,6 +214,12 @@ Expected:
   </data>
   <data name="EventLogTitle" xml:space="preserve">
     <value>AppWatcher Event Log</value>
+  </data>
+  <data name="DashboardRefreshSeconds" xml:space="preserve">
+    <value>Dashboard refresh interval (seconds)</value>
+  </data>
+  <data name="ShowNotificationsLabel" xml:space="preserve">
+    <value>Show notifications for restarts and problems</value>
   </data>
   <data name="EventRetentionDays" xml:space="preserve">
     <value>Event retention (days)</value>
@@ -667,6 +670,27 @@ Both run only in your logged-on desktop session, avoiding Session 0 so child GUI
   </data>
   <data name="TrayExitAgent" xml:space="preserve">
     <value>Exit AppWatcher Agent</value>
+  </data>
+  <data name="TrayHelperOffline" xml:space="preserve">
+    <value>AppWatcher - Administrator helper unavailable</value>
+  </data>
+  <data name="NotifyRestarted" xml:space="preserve">
+    <value>{0} exited and is being restarted.</value>
+  </data>
+  <data name="NotifyBackoff" xml:space="preserve">
+    <value>{0} restarted repeatedly. Automatic restart is paused for now.</value>
+  </data>
+  <data name="NotifyUnresponsive" xml:space="preserve">
+    <value>{0} is not responding.</value>
+  </data>
+  <data name="NotifyFailed" xml:space="preserve">
+    <value>{0} could not be started or stopped.</value>
+  </data>
+  <data name="NotifyHelperOffline" xml:space="preserve">
+    <value>Cannot reach the administrator helper. Administrator applications may not be monitored.</value>
+  </data>
+  <data name="NotifyMore" xml:space="preserve">
+    <value>and {0} more</value>
   </data>
   <data name="TrayMaintenanceMode" xml:space="preserve">
     <value>AppWatcher - Maintenance mode</value>

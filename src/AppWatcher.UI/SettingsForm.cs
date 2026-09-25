@@ -7,6 +7,8 @@ internal sealed class SettingsForm : Form
     private readonly ConfigService _configService = new();
     private readonly ComboBox _language = new();
     private readonly NumericUpDown _retentionDays = Number(1, 3650);
+    private readonly NumericUpDown _refreshSeconds = Number(1, 60);
+    private readonly CheckBox _showNotifications = new() { Text = Localization.T("ShowNotificationsLabel"), AutoSize = true };
     private AppWatcherConfiguration? _configuration;
 
     public SettingsForm()
@@ -15,8 +17,8 @@ internal sealed class SettingsForm : Form
         StartPosition = FormStartPosition.CenterParent;
         AutoScaleMode = AutoScaleMode.Dpi;
         Width = 640;
-        Height = 250;
-        MinimumSize = new Size(560, 235);
+        Height = 340;
+        MinimumSize = new Size(560, 325);
 
         _language.DropDownStyle = ComboBoxStyle.DropDownList;
         _language.Items.Add(new LocalizedOption<UiLanguage>(UiLanguage.Auto, Localization.T("LanguageAuto")));
@@ -28,17 +30,23 @@ internal sealed class SettingsForm : Form
             Dock = DockStyle.Fill,
             AutoScroll = true,
             ColumnCount = 2,
-            RowCount = 3,
+            RowCount = 5,
             Padding = new Padding(18, 18, 18, 10)
         };
         content.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 210));
         content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         content.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         content.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        content.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        content.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         content.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         AddSettingRow(content, 0, Localization.T("LanguageLabel"), _language);
         AddSettingRow(content, 1, Localization.T("EventRetentionDays"), _retentionDays);
+        AddSettingRow(content, 2, Localization.T("DashboardRefreshSeconds"), _refreshSeconds);
+        _showNotifications.Margin = new Padding(3, 8, 3, 8);
+        content.Controls.Add(_showNotifications, 0, 3);
+        content.SetColumnSpan(_showNotifications, 2);
 
         Controls.Add(content);
 
@@ -110,6 +118,8 @@ internal sealed class SettingsForm : Form
         _configuration = await _configService.LoadAsync();
         SelectLanguage(_configuration.Global.Language);
         _retentionDays.Value = Clamp(_retentionDays, _configuration.Global.EventRetentionDays);
+        _refreshSeconds.Value = Clamp(_refreshSeconds, _configuration.Global.UiRefreshSeconds);
+        _showNotifications.Checked = _configuration.Global.ShowNotifications;
     }
 
     private async Task SaveAsync()
@@ -120,12 +130,16 @@ internal sealed class SettingsForm : Form
 
         _configuration.Global.Language = language;
         _configuration.Global.EventRetentionDays = (int)_retentionDays.Value;
+        var refreshSeconds = (int)_refreshSeconds.Value;
+        var showNotifications = _showNotifications.Checked;
         try
         {
             await _configService.UpdateAsync(latest =>
             {
                 latest.Global.Language = language;
                 latest.Global.EventRetentionDays = (int)_retentionDays.Value;
+                latest.Global.UiRefreshSeconds = refreshSeconds;
+                latest.Global.ShowNotifications = showNotifications;
             });
         }
         catch (Exception ex)

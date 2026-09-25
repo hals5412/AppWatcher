@@ -21,6 +21,7 @@ public sealed class SupervisorEngine : IAsyncDisposable
 
     private volatile bool _shuttingDown;
     private int _exitRequested;
+    private readonly TaskCompletionSource _exitRequestedSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private DateTimeOffset? _maintenanceUntilUtc;
     private CancellationTokenSource? _maintenanceTimerCts;
     private AppWatcherConfiguration _configuration = new();
@@ -45,7 +46,10 @@ public sealed class SupervisorEngine : IAsyncDisposable
     public PrivilegeLevel HostPrivilege => _hostPrivilege;
     public bool IsShuttingDown => _shuttingDown;
     public bool ExitRequested => Volatile.Read(ref _exitRequested) != 0;
+    // Completes when the host should exit. Hosts react to it instead of polling ExitRequested.
+    public Task ExitRequestedTask => _exitRequestedSource.Task;
     public bool IsMaintenanceActive => _maintenanceActive;
+    public IEventSink Events => _events;
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
@@ -292,11 +296,18 @@ public sealed class SupervisorEngine : IAsyncDisposable
         // Suppress all automatic restart decisions before the host starts tearing down.
         // Disposing supervisors only detaches from target processes; it never terminates them.
         _shuttingDown = true;
-        await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "HostShutdownRequested", "UserRequest", new
+        try
         {
-            privilege = _hostPrivilege.ToString(),
-            processId = Environment.ProcessId
-        }), cancellationToken).ConfigureAwait(false);
+            await _events.WriteAsync(EventRecordFactory.Create(null, AppLogLevel.Information, "HostShutdownRequested", "UserRequest", new
+            {
+                privilege = _hostPrivilege.ToString(),
+                processId = Environment.ProcessId
+            }), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _exitRequestedSource.TrySetResult();
+        }
     }
 
     private ApplicationSupervisor GetSupervisor(Guid id)
@@ -421,10 +432,14 @@ public sealed class SupervisorEngine : IAsyncDisposable
             {
                 if (_shuttingDown) return;
 
-                foreach (var supervisor in _supervisors.Values.ToArray())
+                var pending = _supervisors.Values.Where(s => s.NeedsExistingDiscovery).ToArray();
+                if (pending.Length == 0) continue;
+
+                using var scope = _runtime.CreateDiscoveryScope();
+                foreach (var supervisor in pending)
                 {
                     if (_lifetime.IsCancellationRequested) return;
-                    await supervisor.TryAttachExistingAsync(_lifetime.Token).ConfigureAwait(false);
+                    await supervisor.TryAttachExistingAsync(scope, _lifetime.Token).ConfigureAwait(false);
                 }
             }
         }

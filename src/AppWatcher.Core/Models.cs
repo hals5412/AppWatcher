@@ -78,7 +78,7 @@ public sealed class GlobalSettings
     public int EventRetentionDays { get; set; } = 90;
     public int EventDatabaseMaxMegabytes { get; set; } = 100;
     public int UiRefreshSeconds { get; set; } = 2;
-    public bool CheckForUpdates { get; set; } = false;
+    public bool ShowNotifications { get; set; } = true;
     [JsonPropertyName("uiLanguage")]
     public UiLanguage Language { get; set; } = UiLanguage.Auto;
     public Dictionary<string, DashboardColumnLayout> DashboardColumns { get; set; } = [];
@@ -154,7 +154,9 @@ public sealed record ApplicationSnapshot(
     string? LastReason,
     string ExecutablePath,
     bool MonitoringEnabled,
-    bool DetectHangs);
+    bool DetectHangs,
+    // ホスト起動後に自動再起動を決定した累計回数。通知の判定に使う（時間枠で減らない）。
+    int AutomaticRestartCount = 0);
 
 public sealed record RunningProcessInfo(
     int ProcessId,

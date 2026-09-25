@@ -164,7 +164,17 @@ public class EventStore : IEventSink
 
     public virtual async Task MaintainAsync(GlobalSettings settings, DateTimeOffset now, CancellationToken token = default)
     {
-        await using var lease = await FileLease.AcquireAsync(Path.Combine(DataDirectory, "events.maintenance.lock"), TimeSpan.FromMilliseconds(100), token).ConfigureAwait(false);
+        FileStream lease;
+        try
+        {
+            lease = await FileLease.AcquireAsync(Path.Combine(DataDirectory, "events.maintenance.lock"), TimeSpan.FromMilliseconds(100), token).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            // AgentとElevatedが同時に起動すると、もう一方がすでに整理している。失敗ではないので何もしない。
+            return;
+        }
+        await using var _ = lease;
         var stamp = Path.Combine(DataDirectory, "events.maintenance.timestamp");
         if (File.Exists(stamp) && DateTimeOffset.TryParse(await File.ReadAllTextAsync(stamp, token).ConfigureAwait(false), out var previous)
             && now - previous < TimeSpan.FromHours(1)) return;

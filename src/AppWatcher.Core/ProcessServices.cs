@@ -19,27 +19,36 @@ public sealed class ProcessMatcher
         var processName = Path.GetFileNameWithoutExtension(definition.ExecutablePath);
         if (string.IsNullOrWhiteSpace(processName)) return null;
 
-        foreach (var process in Process.GetProcessesByName(processName))
+        var candidates = Process.GetProcessesByName(processName);
+        var match = FindMatch(candidates, definition);
+        foreach (var process in candidates)
         {
-            var matched = false;
+            if (!ReferenceEquals(process, match)) process.Dispose();
+        }
+        return match;
+    }
+
+    // Does not dispose candidates; the caller owns them.
+    public Process? FindMatch(IEnumerable<Process> candidates, ApplicationDefinition definition)
+    {
+        if (string.IsNullOrWhiteSpace(definition.ExecutablePath)) return null;
+        foreach (var process in candidates)
+        {
             try
             {
                 // QueryFullProcessImageName needs only PROCESS_QUERY_LIMITED_INFORMATION and,
                 // unlike MainModule, does not read the target's module list.
-                matched = RunningProcessDiscovery.TryGetIdentity(process.Id, process.SessionId, out var identity) &&
-                          IsMatch(identity, definition, _currentUserSid, _currentSessionId);
-                if (matched) return process;
+                if (RunningProcessDiscovery.TryGetIdentity(process.Id, process.SessionId, out var identity) &&
+                    IsMatch(identity, definition, _currentUserSid, _currentSessionId))
+                {
+                    return process;
+                }
             }
             catch
             {
                 // Processes can exit or become inaccessible while enumerating.
             }
-            finally
-            {
-                if (!matched) process.Dispose();
-            }
         }
-
         return null;
     }
 

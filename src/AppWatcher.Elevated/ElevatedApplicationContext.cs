@@ -6,17 +6,17 @@ namespace AppWatcher.Elevated;
 internal sealed class ElevatedApplicationContext : ApplicationContext
 {
     private readonly SupervisorEngine _engine;
-    private readonly System.Windows.Forms.Timer _exitTimer;
+    private readonly WindowsFormsSynchronizationContext _uiContext = new();
+    private bool _exiting;
 
     public ElevatedApplicationContext(SupervisorEngine engine)
     {
         _engine = engine;
-        _exitTimer = new System.Windows.Forms.Timer { Interval = 200 };
-        _exitTimer.Tick += (_, _) =>
-        {
-            if (_engine.ExitRequested) ExitThread();
-        };
-        _exitTimer.Start();
+        // IPC shutdown requests complete on a pipe worker thread; marshal ExitThread to the
+        // message-loop thread without waking the process on a polling timer.
+        _engine.ExitRequestedTask.ContinueWith(
+            _ => PostExit(),
+            TaskScheduler.Default);
         SystemEvents.SessionEnding += OnSessionEnding;
     }
 
@@ -25,11 +25,17 @@ internal sealed class ElevatedApplicationContext : ApplicationContext
         _engine.BeginSystemShutdown();
     }
 
+    private void PostExit()
+    {
+        try { _uiContext.Post(_ => ExitThread(), null); }
+        catch { /* The message loop has already ended. */ }
+    }
+
     protected override void ExitThreadCore()
     {
+        if (_exiting) return;
+        _exiting = true;
         SystemEvents.SessionEnding -= OnSessionEnding;
-        _exitTimer.Stop();
-        _exitTimer.Dispose();
         base.ExitThreadCore();
     }
 }

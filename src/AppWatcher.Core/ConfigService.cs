@@ -15,6 +15,20 @@ public sealed class ConfigService
     }
 
     private string ConfigFile => Path.Combine(_dataDirectory, "config.json");
+
+    // 保存は一時ファイルからの置き換えなので、更新日時とサイズで変更の有無を安く判定できる。
+    public (DateTime LastWriteUtc, long Length) GetFileStamp()
+    {
+        try
+        {
+            var info = new FileInfo(ConfigFile);
+            return info.Exists ? (info.LastWriteTimeUtc, info.Length) : default;
+        }
+        catch
+        {
+            return default;
+        }
+    }
     private string FallbackLog => Path.Combine(_dataDirectory, "appwatcher-fallback.log");
 
     public async Task<AppWatcherConfiguration> LoadAsync(CancellationToken cancellationToken = default)

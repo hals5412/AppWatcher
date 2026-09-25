@@ -64,6 +64,17 @@ internal sealed class FakeRuntime(TestClock clock) : IProcessRuntime
         if (FindExistingFails) throw new InvalidOperationException("Discovery failed.");
         return Processes.Concat(External).LastOrDefault(p => !p.HasExited);
     }
+    public int ScopesCreated;
+    public IProcessDiscoveryScope CreateDiscoveryScope()
+    {
+        Interlocked.Increment(ref ScopesCreated);
+        return new FakeScope(this);
+    }
+    private sealed class FakeScope(FakeRuntime runtime) : IProcessDiscoveryScope
+    {
+        public IManagedProcess? FindExisting(ApplicationDefinition definition) => runtime.FindExisting(definition);
+        public void Dispose() { }
+    }
     public IManagedProcess Launch(ApplicationDefinition definition)
     {
         var process = new FakeProcess(100 + Launches, clock.GetUtcNow());

@@ -183,6 +183,10 @@ Default columns:
 
 Host status shows Agent / Elevated PID, uptime and working set.
 
+The dashboard refreshes every `global.uiRefreshSeconds` seconds (1–60, default 2) and does not query the hosts while minimized. The configuration file is re-read only when its timestamp or size changes.
+
+The tray icon summarizes applications from both hosts. When administrator applications are configured and the Elevated helper cannot be reached, the tray reports a problem. Unless `global.showNotifications` is `false`, the tray shows a notification when an application is automatically restarted, enters Backoff, becomes unresponsive, fails to start or stop, or when the Elevated helper stops responding.
+
 ## 11. Shutdown behavior
 
 When Windows session ending is observed, hosts enter shutdown mode and do not schedule new automatic launches.

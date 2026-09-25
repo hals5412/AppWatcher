@@ -34,8 +34,11 @@ internal sealed class MainForm : Form
     private readonly LinkLabel _startupWarning = new();
     private readonly TableLayoutPanel _mainLayout = new();
     private readonly System.Windows.Forms.Timer _refreshTimer = new();
-    private readonly System.Windows.Forms.Timer _lifecycleTimer = new();
     private readonly EventWaitHandle _uiExitEvent = LifecycleSignals.CreateUiExitEvent();
+    private RegisteredWaitHandle? _uiExitWait;
+    private AppWatcherConfiguration? _dashboardConfig;
+    private (DateTime LastWriteUtc, long Length) _dashboardConfigStamp;
+    private bool _wasMinimized;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
     private HostSnapshot? _normalHost;
@@ -104,13 +107,36 @@ internal sealed class MainForm : Form
         Controls.Add(menu);
 
         _refreshTimer.Interval = 2000;
-        _refreshTimer.Tick += async (_, _) => await RefreshDashboardAsync();
-        _lifecycleTimer.Interval = 200;
-        _lifecycleTimer.Tick += (_, _) =>
+        _refreshTimer.Tick += async (_, _) =>
         {
-            if (_uiExitEvent.WaitOne(0)) Close();
+            // 最小化中は画面に見えないため、ホストへの問い合わせを省く。
+            if (WindowState == FormWindowState.Minimized) return;
+            await RefreshDashboardAsync();
         };
-        _lifecycleTimer.Start();
+        Resize += async (_, _) =>
+        {
+            var minimized = WindowState == FormWindowState.Minimized;
+            if (_wasMinimized && !minimized)
+            {
+                _wasMinimized = false;
+                await RefreshDashboardAsync();
+            }
+            _wasMinimized = minimized;
+        };
+        HandleCreated += (_, _) =>
+        {
+            // 終了要求はイベントを待機スレッドで受け、UIスレッドへ渡す（ポーリングしない）。
+            _uiExitWait ??= ThreadPool.RegisterWaitForSingleObject(
+                _uiExitEvent,
+                (_, _) =>
+                {
+                    try { BeginInvoke(Close); }
+                    catch (InvalidOperationException) { /* Already closing. */ }
+                },
+                null,
+                Timeout.Infinite,
+                executeOnlyOnce: true);
+        };
         Shown += async (_, _) =>
         {
             await LoadColumnLayoutAsync();
@@ -124,8 +150,7 @@ internal sealed class MainForm : Form
             SaveColumnLayoutIfNeeded();
             _refreshTimer.Stop();
             _refreshTimer.Dispose();
-            _lifecycleTimer.Stop();
-            _lifecycleTimer.Dispose();
+            _uiExitWait?.Unregister(null);
             _rowContextMenu.Dispose();
             _uiExitEvent.Dispose();
             _refreshGate.Dispose();
@@ -1001,7 +1026,8 @@ internal sealed class MainForm : Form
             _normalHost = normal.Success ? normal.Snapshot : null;
             _adminHost = admin.Success ? admin.Snapshot : null;
 
-            var config = await _configService.LoadAsync();
+            var config = await LoadDashboardConfigAsync();
+            ApplyRefreshInterval(config);
             var snapshots = new Dictionary<Guid, ApplicationSnapshot>();
             if (_normalHost is not null)
             {
@@ -1078,6 +1104,24 @@ internal sealed class MainForm : Form
         {
             _refreshGate.Release();
         }
+    }
+
+    // 定期更新のたびに設定ファイルのロック・解析をしないよう、変更があったときだけ読み直す。
+    private async Task<AppWatcherConfiguration> LoadDashboardConfigAsync()
+    {
+        var stamp = _configService.GetFileStamp();
+        if (_dashboardConfig is null || stamp == default || stamp != _dashboardConfigStamp)
+        {
+            _dashboardConfig = await _configService.LoadAsync();
+            _dashboardConfigStamp = stamp;
+        }
+        return _dashboardConfig;
+    }
+
+    private void ApplyRefreshInterval(AppWatcherConfiguration config)
+    {
+        var interval = Math.Clamp(config.Global.UiRefreshSeconds, 1, 60) * 1000;
+        if (_refreshTimer.Interval != interval) _refreshTimer.Interval = interval;
     }
 
     private ApplicationSnapshot CreateUnavailableSnapshot(ApplicationDefinition definition)

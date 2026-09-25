@@ -153,26 +153,7 @@ internal static class TaskSchedulerInstaller
         (TryStartRegisteredHost(PrivilegeLevel.Normal),
          TryStartRegisteredHost(PrivilegeLevel.Administrator));
 
-    public static bool TryStartRegisteredHost(PrivilegeLevel privilege)
-    {
-        try
-        {
-            var serviceType = Type.GetTypeFromProgID("Schedule.Service");
-            if (serviceType is null) return false;
-
-            object? serviceObject = Activator.CreateInstance(serviceType);
-            if (serviceObject is null) return false;
-
-            dynamic service = serviceObject;
-            service.Connect();
-            dynamic folder = service.GetFolder("\\AppWatcher");
-            return TryRun(folder, privilege == PrivilegeLevel.Administrator ? "Elevated" : "Agent");
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    public static bool TryStartRegisteredHost(PrivilegeLevel privilege) => StartupTaskRunner.TryRun(privilege);
 
     private static bool TryRun(dynamic folder, string taskName)
     {

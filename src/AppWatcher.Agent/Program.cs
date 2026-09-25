@@ -10,11 +10,19 @@ internal static class Program
         using var guard = new SingleInstanceGuard("Agent");
         if (!guard.IsOwner) return;
 
+        CrashLogging.Install("Agent");
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += (_, e) => CrashLogging.Write("Agent", "ThreadException", e.Exception);
+
         AppPaths.EnsureDataDirectory();
         var config = new ConfigService();
         var eventStore = new EventStore();
         var engine = new SupervisorEngine(PrivilegeLevel.Normal, config, eventStore);
         var pipeServer = new SupervisorPipeServer(engine);
+        var watchdog = new PeerHostWatchdog(
+            PrivilegeLevel.Administrator,
+            () => engine.IsShuttingDown || engine.ExitRequested,
+            engine.Events);
 
         try
         {
@@ -23,6 +31,7 @@ internal static class Program
             ApplicationConfiguration.Initialize();
             engine.StartAsync().GetAwaiter().GetResult();
             pipeServer.Start();
+            watchdog.Start();
             Application.Run(new TrayApplicationContext(engine));
         }
         catch (Exception ex)
@@ -31,6 +40,7 @@ internal static class Program
         }
         finally
         {
+            watchdog.DisposeAsync().AsTask().GetAwaiter().GetResult();
             pipeServer.DisposeAsync().AsTask().GetAwaiter().GetResult();
             engine.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }

@@ -33,7 +33,7 @@
     "eventRetentionDays": 90,
     "eventDatabaseMaxMegabytes": 100,
     "uiRefreshSeconds": 2,
-    "checkForUpdates": false,
+    "showNotifications": true,
     "uiLanguage": "Auto"
   }
 }

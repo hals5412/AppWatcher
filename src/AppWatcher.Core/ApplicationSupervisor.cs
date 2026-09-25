@@ -24,6 +24,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
     private bool _pendingRecovery;
     private bool _pendingStartup;
     private int? _lastExitCode;
+    private int _automaticRestartCount;
     private readonly object _tasksLock = new();
     private readonly HashSet<Task> _tasks = [];
     private readonly object _disposeLock = new();
@@ -133,7 +134,20 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
         }
     }
 
-    public async Task<bool> TryAttachExistingAsync(CancellationToken cancellationToken = default)
+    // 定期探索の対象かどうかの目安。ロック外で読むため、確定判定はTryAttachExistingAsyncで行う。
+    public bool NeedsExistingDiscovery
+    {
+        get
+        {
+            var process = _process;
+            return !_disposed && _definition.AttachExisting && !_intentionalStop && (process is null || HasExited(process));
+        }
+    }
+
+    public Task<bool> TryAttachExistingAsync(CancellationToken cancellationToken = default) =>
+        TryAttachExistingAsync(null, cancellationToken);
+
+    public async Task<bool> TryAttachExistingAsync(IProcessDiscoveryScope? scope, CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -144,7 +158,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
             IManagedProcess? existing;
             try
             {
-                existing = _runtime.FindExisting(_definition);
+                existing = scope is null ? _runtime.FindExisting(_definition) : scope.FindExisting(_definition);
             }
             catch (Exception ex)
             {
@@ -415,7 +429,8 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
             _intentionalStop && pid is null ? "IntentionalStop" : _lastReason,
             _definition.ExecutablePath,
             _definition.MonitoringEnabled,
-            _definition.DetectHangs);
+            _definition.DetectHangs,
+            _automaticRestartCount);
     }
 
     private bool IsApplicationPaused => _pauseIndefinite || _pauseUntilUtc is not null;
@@ -611,6 +626,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
                 max = _definition.MaxRestarts
             }, CancellationToken.None).ConfigureAwait(false);
 
+            ++_automaticRestartCount;
             ScheduleRestartLocked("AutomaticRestart");
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
@@ -894,7 +910,11 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
     {
         if (_pendingStartup) return StartProcessLockedAsync("MonitoringResumed", token);
         var permission = _restartLimiter.TryAcquire(_time.GetUtcNow());
-        if (permission.Allowed) ScheduleRestartLocked("AutomaticRestart");
+        if (permission.Allowed)
+        {
+            ++_automaticRestartCount;
+            ScheduleRestartLocked("AutomaticRestart");
+        }
         else if (permission.BackoffUntilUtc is { } until)
         {
             SetState(AppRuntimeState.Backoff, permission.ReasonCode, "RestartSuppressed");

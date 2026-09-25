@@ -198,6 +198,9 @@ Published packages also include `stop-appwatcher.ps1` and `restart-appwatcher.ps
 - Configuration reloads apply changes by application ID, preserving tracked processes, pause deadlines, restart history, and backoff. Explicitly stop a target before changing its executable or privilege level; a privilege transfer also preserves its stopped state.
 - Pause and manual Stop are not persisted across host restarts. Startup settings are evaluated again when AppWatcher restarts.
 - Global Pause/Resume from either the tray or dashboard addresses both hosts and reports partial failures. An offline, unused Elevated helper is not started just for this operation.
+- The tray icon includes administrator applications. If administrator applications are configured but the Elevated helper cannot be reached, the tray reports a problem. Notifications for automatic restarts, backoff, hangs and start/stop failures can be turned off in Settings.
+- Agent and Elevated check each other every 30 seconds. After two consecutive misses the peer is started again through its registered task. A peer that never answered is left alone, and restarts are limited to three per hour.
+- Unhandled exceptions are written to the fallback log.
 - Targets with `AttachExisting` enabled are detected and attached within about five seconds if launched externally after AppWatcher starts. Only unattached targets are checked by executable name; explicit manual Stop suppresses automatic attachment.
 - Configuration uses a cross-process file lock and partial updates against the latest saved values. A lock wait exceeding 10 seconds fails the operation; retry manually.
 - Log database failures do not stop monitoring. Logging uses a queue of up to 1,024 events and reports overflow counts to the fallback log. Failed database attempts are retried no more than once per minute.

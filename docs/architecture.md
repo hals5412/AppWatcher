@@ -36,7 +36,7 @@ The supervisor:
 6. evaluates restart policy and loop protection after an unexpected exit;
 7. logs the event, decision, reason and result.
 
-External discovery queries only the executable names configured for unattached targets and then verifies the full path. It does not inspect every process on each interval. Manual Stop suppresses discovery for that target until an explicit Start or Restart.
+External discovery runs only when at least one target is unattached. Each five-second tick takes a single process list, shared by every pending target, and verifies the full path, privilege level, user and session. When nothing is pending no process list is taken. Manual Stop suppresses discovery for that target until an explicit Start or Restart.
 
 `InteractiveProcessLauncher` uses normal interactive shell execution. No Job Object is assigned.
 
@@ -78,6 +78,12 @@ Every host snapshot exposes:
 - version
 
 This information is gathered only when a snapshot is requested, rather than written continuously.
+
+`PeerHostWatchdog` runs in both hosts. Every 30 seconds each host pings the other host's pipe. After two consecutive misses it runs the peer's registered Task Scheduler task (no UAC prompt, because the Elevated task is already registered with highest privileges). A peer that has never answered since this host started is left alone, restarts are limited to three per hour, and the check is suppressed while the local host is shutting down.
+
+Both hosts record unhandled UI-thread, background-task and process-terminating exceptions in the fallback log.
+
+Host exit requests arriving over IPC complete a task that is marshalled onto the WinForms message loop. The dashboard waits on its exit event with a registered wait handle. No component polls on a short timer.
 
 ## Security boundary
 
