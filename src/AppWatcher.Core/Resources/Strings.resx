@@ -63,14 +63,11 @@
   <data name="ButtonStop" xml:space="preserve">
     <value>Stop</value>
   </data>
-  <data name="ButtonValidate" xml:space="preserve">
-    <value>Validate</value>
-  </data>
   <data name="CannotSave" xml:space="preserve">
     <value>Cannot save</value>
   </data>
   <data name="ChildProcessPolicyInfo" xml:space="preserve">
-    <value>Recommended: leave child processes unmanaged. This preserves compatibility when monitored applications launch other interactive GUI processes.</value>
+    <value>Applications started by the monitored application (child processes) are not managed and are not stopped or restarted, so setups that launch other GUI applications keep working.</value>
   </data>
   <data name="ChildProcessPolicy_StopWithParent" xml:space="preserve">
     <value>Stop with parent</value>
@@ -124,12 +121,6 @@
     <value>Command failed for {0}.
 
 {1}</value>
-  </data>
-  <data name="ConfigurationValid" xml:space="preserve">
-    <value>Configuration is valid.</value>
-  </data>
-  <data name="ConfigurationValidation" xml:space="preserve">
-    <value>Configuration validation</value>
   </data>
   <data name="CouldNotOpenDashboard" xml:space="preserve">
     <value>Could not open the dashboard.
@@ -207,7 +198,7 @@ Expected:
     <value>Elevated: PID {0}, up {1}, {2:F1} MB</value>
   </data>
   <data name="EnableRestartLoopProtection" xml:space="preserve">
-    <value>Enable restart-loop protection</value>
+    <value>Limit the number of restarts</value>
   </data>
   <data name="EventDatabaseMaxMb" xml:space="preserve">
     <value>Event database max size (MB)</value>
@@ -305,16 +296,13 @@ Managed applications will be left running.</value>
     <value>Arguments</value>
   </data>
   <data name="FieldBackoffMinutes" xml:space="preserve">
-    <value>Backoff (minutes)</value>
-  </data>
-  <data name="FieldChildProcessPolicy" xml:space="preserve">
-    <value>Child process policy</value>
+    <value>Pause after reaching the limit (minutes)</value>
   </data>
   <data name="FieldExecutable" xml:space="preserve">
     <value>Executable</value>
   </data>
   <data name="FieldGracefulShutdownTimeout" xml:space="preserve">
-    <value>Graceful shutdown timeout</value>
+    <value>Time to wait for exit (seconds)</value>
   </data>
   <data name="FieldHangAction" xml:space="preserve">
     <value>When unresponsive</value>
@@ -332,13 +320,13 @@ Managed applications will be left running.</value>
     <value>Hang timeout (sec)</value>
   </data>
   <data name="FieldHealthyResetMinutes" xml:space="preserve">
-    <value>Healthy reset (minutes)</value>
+    <value>Reset the count after running for (minutes)</value>
   </data>
   <data name="FieldLogLevel" xml:space="preserve">
     <value>Log level</value>
   </data>
   <data name="FieldMaxRestarts" xml:space="preserve">
-    <value>Max restarts</value>
+    <value>Maximum restarts</value>
   </data>
   <data name="FieldName" xml:space="preserve">
     <value>Name</value>
@@ -347,16 +335,16 @@ Managed applications will be left running.</value>
     <value>Privilege</value>
   </data>
   <data name="FieldRestartDelaySeconds" xml:space="preserve">
-    <value>Restart delay (sec)</value>
+    <value>Delay before restarting (seconds)</value>
   </data>
   <data name="FieldRestartPolicy" xml:space="preserve">
     <value>Restart policy</value>
   </data>
   <data name="FieldStartupGraceSeconds" xml:space="preserve">
-    <value>Startup grace period (sec)</value>
+    <value>Ignore right after start for (seconds)</value>
   </data>
   <data name="FieldWithinMinutes" xml:space="preserve">
-    <value>Within (minutes)</value>
+    <value>Counting period (minutes)</value>
   </data>
   <data name="FieldWorkingDirectory" xml:space="preserve">
     <value>Working directory</value>
@@ -373,9 +361,6 @@ Managed applications will be left running.</value>
   </data>
   <data name="InstallRepairStartupTasks" xml:space="preserve">
     <value>Install / repair startup tasks...</value>
-  </data>
-  <data name="InteractiveLaunchInfo" xml:space="preserve">
-    <value>Launch mode: Interactive desktop (normal Windows GUI behavior). AppWatcher does not place targets in Session 0 or a Job Object.</value>
   </data>
   <data name="LabelApplication" xml:space="preserve">
     <value>Application:</value>
@@ -554,13 +539,13 @@ The application itself will not be stopped.</value>
     <value>Remove application</value>
   </data>
   <data name="RestartPolicy_AbnormalExitOnly" xml:space="preserve">
-    <value>Restart only on abnormal exit</value>
+    <value>Restart only on error exit (non-zero exit code)</value>
   </data>
   <data name="RestartPolicy_AnyUnexpectedExit" xml:space="preserve">
-    <value>Restart on any unexpected exit</value>
+    <value>Always restart when it exits (except when stopped from AppWatcher)</value>
   </data>
   <data name="RestartPolicy_Never" xml:space="preserve">
-    <value>Never restart automatically</value>
+    <value>Do not restart (monitor only)</value>
   </data>
   <data name="ResumeAllMonitoring" xml:space="preserve">
     <value>Resume all monitoring</value>
@@ -978,4 +963,67 @@ Use Tools &gt; Install / repair startup tasks to repair missing, disabled, or st
   <data name="StopBeforeIdentityChange" xml:space="preserve"><value>Stop the application explicitly before changing its executable or privilege.</value></data>
   <data name="HostOperationFailureFormat" xml:space="preserve"><value>{0}: {1}</value></data>
   <data name="ConfigurationSaveFailed" xml:space="preserve"><value>Could not save configuration: {0}</value></data>
+  <data name="RestartPolicyInfo" xml:space="preserve">
+    <value>To close the application yourself, use Stop in the dashboard. Closing its window also counts as an exit and triggers a restart.</value>
+  </data>
+  <data name="GroupApplication" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="GroupStartup" xml:space="preserve">
+    <value>Startup and monitoring</value>
+  </data>
+  <data name="GroupRestart" xml:space="preserve">
+    <value>Restart after exit</value>
+  </data>
+  <data name="GroupHangDetection" xml:space="preserve">
+    <value>Hang detection</value>
+  </data>
+  <data name="GroupLoopProtection" xml:space="preserve">
+    <value>Restart-loop protection</value>
+  </data>
+  <data name="GroupStopOperation" xml:space="preserve">
+    <value>Stop and restart operations</value>
+  </data>
+  <data name="GroupLogging" xml:space="preserve">
+    <value>Logging</value>
+  </data>
+  <data name="GroupChildProcesses" xml:space="preserve">
+    <value>Child processes</value>
+  </data>
+  <data name="StopOperationInfo" xml:space="preserve">
+    <value>When you stop or restart from the dashboard, AppWatcher first asks the window to close. If it does not exit in time, it is force-terminated when enabled.</value>
+  </data>
+  <data name="LoopProtectionSummary" xml:space="preserve">
+    <value>After {0} restarts within {1} minutes, automatic restart pauses for {2} minutes. The count resets after {3} minutes of running.</value>
+  </data>
+  <data name="LoopProtectionDisabledSummary" xml:space="preserve">
+    <value>Restarts are not limited; the application is restarted every time it exits.</value>
+  </data>
+  <data name="RestartDisabledSummary" xml:space="preserve">
+    <value>Restart is disabled, so these settings are not used.</value>
+  </data>
+  <data name="ZeroDelayWarning" xml:space="preserve">
+    <value>With no delay and no restart limit, an application that crashes on startup is relaunched continuously.</value>
+  </data>
+  <data name="ZeroDelayConfirm" xml:space="preserve">
+    <value>The restart delay is 0 seconds and restarts are not limited. An application that crashes on startup will be relaunched continuously.
+
+Save anyway?</value>
+  </data>
+  <data name="IdentityLockedInfo" xml:space="preserve">
+    <value>The executable and privilege cannot be changed while the application is running.</value>
+  </data>
+  <data name="ButtonStopToEdit" xml:space="preserve">
+    <value>Stop to change</value>
+  </data>
+  <data name="StopToEditConfirm" xml:space="preserve">
+    <value>Stop {0}? It will not restart automatically while stopped. After changing the settings, use Start in the dashboard.</value>
+  </data>
+  <data name="StopToEditFailed" xml:space="preserve">
+    <value>Could not stop the application.
+{0}</value>
+  </data>
+  <data name="ValidationSummary" xml:space="preserve">
+    <value>Check your input: {0}</value>
+  </data>
 </root>

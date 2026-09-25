@@ -103,7 +103,7 @@ Required or supported settings:
 - Healthy-reset duration
 - Graceful shutdown timeout
 - Force terminate after graceful timeout
-- Child process policy (v1 UI default and only supported mode: `Unmanaged`)
+- Child process policy (v1 supports only `Unmanaged`; the editor shows it as an explanation instead of a choice and keeps the stored value)
 - Per-application log level
 
 Default process identity match is full executable path, not just executable file name. An existing instance must also run in the current session, under the current user, and at the configured privilege level. A same-path instance at a different privilege level is treated as a different application.
@@ -122,7 +122,14 @@ Default values:
 
 Manual dashboard `Stop` is intentional and suppresses restart until an explicit Start or Restart, including across configuration reload and maintenance resume within the same host lifetime.
 
-Automatic restart is evaluated after an unexpected exit according to the selected policy.
+Automatic restart is evaluated after an unexpected exit according to the selected policy. An exit is "unexpected" whenever it was not requested through AppWatcher's Stop or Restart; closing the application's own window therefore also triggers a restart. The editor states this next to the policy.
+
+Editor behavior:
+
+- Settings that have no effect are disabled: restart delay and loop protection when the policy is `Never`, loop limits when protection is off, and hang settings when hang detection is off.
+- Input errors (missing name, missing executable or working directory, hang timeout shorter than the check interval) are shown next to the field and in the dialog footer as soon as they occur. Duplicate executable paths are rejected without closing the dialog.
+- A zero-second restart delay without loop protection shows a warning and asks for confirmation when saving.
+- While a target is running, its executable and privilege are read-only. The editor offers "Stop to change", which stops the target through its host and then unlocks these fields, so other edits are not lost.
 
 When `AttachExisting` is enabled, AppWatcher checks for a matching instance again immediately before an automatic or manual launch. An instance started during the restart delay (by the user, or by the target itself) is attached instead of launching a duplicate.
 

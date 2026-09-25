@@ -63,14 +63,11 @@
   <data name="ButtonStop" xml:space="preserve">
     <value>停止</value>
   </data>
-  <data name="ButtonValidate" xml:space="preserve">
-    <value>設定を確認</value>
-  </data>
   <data name="CannotSave" xml:space="preserve">
     <value>保存できません</value>
   </data>
   <data name="ChildProcessPolicyInfo" xml:space="preserve">
-    <value>推奨: 子プロセスは管理しない。監視対象アプリから別のGUIアプリを起動する構成との互換性を保ちます。</value>
+    <value>監視対象アプリが起動した別のアプリ（子プロセス）は管理しません。停止・再起動の対象にもならないため、監視対象から別のGUIアプリを起動する構成でもそのまま動作します。</value>
   </data>
   <data name="ChildProcessPolicy_StopWithParent" xml:space="preserve">
     <value>親と一緒に停止</value>
@@ -124,12 +121,6 @@
     <value>{0} への操作に失敗しました。
 
 {1}</value>
-  </data>
-  <data name="ConfigurationValid" xml:space="preserve">
-    <value>設定に問題はありません。</value>
-  </data>
-  <data name="ConfigurationValidation" xml:space="preserve">
-    <value>設定チェック</value>
   </data>
   <data name="CouldNotOpenDashboard" xml:space="preserve">
     <value>ダッシュボードを開けませんでした。
@@ -207,7 +198,7 @@
     <value>管理者Helper: PID {0} / 稼働 {1} / {2:F1} MB</value>
   </data>
   <data name="EnableRestartLoopProtection" xml:space="preserve">
-    <value>再起動ループ防止を有効にする</value>
+    <value>再起動の回数を制限する</value>
   </data>
   <data name="EventDatabaseMaxMb" xml:space="preserve">
     <value>イベントDB最大サイズ（MB）</value>
@@ -305,16 +296,13 @@
     <value>引数</value>
   </data>
   <data name="FieldBackoffMinutes" xml:space="preserve">
-    <value>再起動待機時間（分）</value>
-  </data>
-  <data name="FieldChildProcessPolicy" xml:space="preserve">
-    <value>子プロセスの扱い</value>
+    <value>上限に達したときの停止時間（分）</value>
   </data>
   <data name="FieldExecutable" xml:space="preserve">
     <value>実行ファイル</value>
   </data>
   <data name="FieldGracefulShutdownTimeout" xml:space="preserve">
-    <value>通常終了の待機時間（秒）</value>
+    <value>終了を待つ時間（秒）</value>
   </data>
   <data name="FieldHangAction" xml:space="preserve">
     <value>応答なし時の動作</value>
@@ -332,13 +320,13 @@
     <value>応答なし判定時間（秒）</value>
   </data>
   <data name="FieldHealthyResetMinutes" xml:space="preserve">
-    <value>正常稼働で回数リセット（分）</value>
+    <value>この時間動き続けたら回数をリセット（分）</value>
   </data>
   <data name="FieldLogLevel" xml:space="preserve">
     <value>ログレベル</value>
   </data>
   <data name="FieldMaxRestarts" xml:space="preserve">
-    <value>最大再起動回数</value>
+    <value>再起動の上限回数</value>
   </data>
   <data name="FieldName" xml:space="preserve">
     <value>名前</value>
@@ -353,10 +341,10 @@
     <value>終了時の動作</value>
   </data>
   <data name="FieldStartupGraceSeconds" xml:space="preserve">
-    <value>起動直後の猶予時間（秒）</value>
+    <value>起動直後は判定しない時間（秒）</value>
   </data>
   <data name="FieldWithinMinutes" xml:space="preserve">
-    <value>判定時間（分）</value>
+    <value>回数を数える期間（分）</value>
   </data>
   <data name="FieldWorkingDirectory" xml:space="preserve">
     <value>作業フォルダー</value>
@@ -373,9 +361,6 @@
   </data>
   <data name="InstallRepairStartupTasks" xml:space="preserve">
     <value>自動起動タスクをインストール／修復...</value>
-  </data>
-  <data name="InteractiveLaunchInfo" xml:space="preserve">
-    <value>起動方式: 対話型デスクトップ（通常のWindows GUI起動）。対象アプリをSession 0やJob Objectへ移しません。</value>
   </data>
   <data name="LabelApplication" xml:space="preserve">
     <value>アプリ:</value>
@@ -554,13 +539,13 @@
     <value>アプリを削除</value>
   </data>
   <data name="RestartPolicy_AbnormalExitOnly" xml:space="preserve">
-    <value>異常終了時のみ再起動</value>
+    <value>エラー終了（終了コード0以外）のときだけ再起動</value>
   </data>
   <data name="RestartPolicy_AnyUnexpectedExit" xml:space="preserve">
-    <value>予期しない終了なら再起動</value>
+    <value>終了したら常に再起動（AppWatcherで停止した場合を除く）</value>
   </data>
   <data name="RestartPolicy_Never" xml:space="preserve">
-    <value>自動再起動しない</value>
+    <value>再起動しない（監視のみ）</value>
   </data>
   <data name="ResumeAllMonitoring" xml:space="preserve">
     <value>全監視を再開</value>
@@ -978,4 +963,69 @@ AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監�
   <data name="StopBeforeIdentityChange" xml:space="preserve"><value>実行ファイルや権限を変更する前に、対象アプリを明示的に停止してください。</value></data>
   <data name="HostOperationFailureFormat" xml:space="preserve"><value>{0}: {1}</value></data>
   <data name="ConfigurationSaveFailed" xml:space="preserve"><value>設定を保存できませんでした: {0}</value></data>
+  <data name="RestartPolicyInfo" xml:space="preserve">
+    <value>アプリを自分で終了したいときは、ダッシュボードの「停止」を使ってください。アプリのウィンドウを閉じた場合も再起動の対象になります。</value>
+  </data>
+  <data name="GroupApplication" xml:space="preserve">
+    <value>アプリ</value>
+  </data>
+  <data name="GroupStartup" xml:space="preserve">
+    <value>起動と監視</value>
+  </data>
+  <data name="GroupRestart" xml:space="preserve">
+    <value>終了したときの再起動</value>
+  </data>
+  <data name="GroupHangDetection" xml:space="preserve">
+    <value>応答なし検出</value>
+  </data>
+  <data name="GroupLoopProtection" xml:space="preserve">
+    <value>再起動ループ防止</value>
+  </data>
+  <data name="GroupStopOperation" xml:space="preserve">
+    <value>停止・再起動操作</value>
+  </data>
+  <data name="GroupLogging" xml:space="preserve">
+    <value>ログ</value>
+  </data>
+  <data name="GroupChildProcesses" xml:space="preserve">
+    <value>子プロセス</value>
+  </data>
+  <data name="StopOperationInfo" xml:space="preserve">
+    <value>ダッシュボードで停止・再起動したときは、まずウィンドウを閉じる要求を送ります。この時間内に終了しなければ、設定に応じて強制終了します。</value>
+  </data>
+  <data name="LoopProtectionSummary" xml:space="preserve">
+    <value>{1}分間に{0}回再起動したら、{2}分間は自動再起動を止めます。{3}分間動き続けたら回数をリセットします。</value>
+  </data>
+  <data name="LoopProtectionDisabledSummary" xml:space="preserve">
+    <value>回数を制限しないため、落ちるたびに何度でも再起動します。</value>
+  </data>
+  <data name="RestartDisabledSummary" xml:space="preserve">
+    <value>再起動しない設定のため、この枠の設定は使われません。</value>
+  </data>
+  <data name="ZeroDelayWarning" xml:space="preserve">
+    <value>待機0秒で回数も制限しないため、起動直後に落ちるアプリを間を置かずに起動し続けます。</value>
+  </data>
+  <data name="ZeroDelayConfirm" xml:space="preserve">
+    <value>待機0秒で回数も制限しない設定です。起動直後に落ちるアプリの場合、間を置かずに起動し続けます。
+
+このまま保存しますか？</value>
+  </data>
+  <data name="IdentityLockedInfo" xml:space="preserve">
+    <value>動作中のため、実行ファイルと実行権限は変更できません。</value>
+  </data>
+  <data name="ButtonStopToEdit" xml:space="preserve">
+    <value>停止して変更する</value>
+  </data>
+  <data name="StopToEditConfirm" xml:space="preserve">
+    <value>{0} を停止します。停止中は自動で再起動しません。変更後はダッシュボードの「開始」で起動してください。
+
+停止しますか？</value>
+  </data>
+  <data name="StopToEditFailed" xml:space="preserve">
+    <value>停止できませんでした。
+{0}</value>
+  </data>
+  <data name="ValidationSummary" xml:space="preserve">
+    <value>入力内容を確認してください: {0}</value>
+  </data>
 </root>

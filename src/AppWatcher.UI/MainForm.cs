@@ -1298,7 +1298,8 @@ internal sealed class MainForm : Form
 
     private async Task AddDefinitionAsync(ApplicationDefinition definition)
     {
-        using var editor = new AppEditForm(definition);
+        var current = await _configService.LoadAsync();
+        using var editor = new AppEditForm(definition, candidate => DuplicateMessage(current.Applications, candidate));
         if (editor.ShowDialog(this) != DialogResult.OK) return;
 
         var config = await _configService.LoadAsync();
@@ -1337,7 +1338,13 @@ internal sealed class MainForm : Form
         var clone = JsonSerializer.Deserialize<ApplicationDefinition>(
             JsonSerializer.Serialize(existing, JsonDefaults.Options), JsonDefaults.Options) ?? existing;
 
-        using var editor = new AppEditForm(clone);
+        // 動作中は実行ファイル・権限を変更できない。編集画面から停止できるようにして、入力のやり直しを防ぐ。
+        var live = await GetLiveSnapshotAsync(existing);
+        var identityLocked = live is null || live.ProcessId is not null || live.LastReason != "IntentionalStop";
+        using var editor = new AppEditForm(
+            clone,
+            candidate => DuplicateMessage(config.Applications, candidate),
+            identityLocked ? () => StopForEditAsync(existing) : null);
         if (editor.ShowDialog(this) != DialogResult.OK) return;
 
         var duplicate = FindDuplicateApplication(config.Applications, editor.Result);
@@ -1356,8 +1363,7 @@ internal sealed class MainForm : Form
         if (index >= 0) config.Applications[index] = editor.Result;
         if (ApplicationSupervisor.IdentityChanged(existing, editor.Result))
         {
-            var response = await (existing.Privilege == PrivilegeLevel.Normal ? _normalClient : _adminClient).SendAsync(new SupervisorRequest(SupervisorCommandType.GetSnapshot));
-            var live = response.Snapshot?.Applications.FirstOrDefault(a => a.Id == existing.Id);
+            live = await GetLiveSnapshotAsync(existing);
             if (live is null || live.ProcessId is not null || live.LastReason != "IntentionalStop")
             {
                 MessageBox.Show(this, Localization.T("StopBeforeIdentityChange"), "AppWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1374,6 +1380,27 @@ internal sealed class MainForm : Form
         })) return;
         await EnsureHostForDefinitionAsync(editor.Result);
         await ReloadHostsAsync();
+    }
+
+    private async Task<ApplicationSnapshot?> GetLiveSnapshotAsync(ApplicationDefinition definition)
+    {
+        var client = definition.Privilege == PrivilegeLevel.Normal ? _normalClient : _adminClient;
+        var response = await client.SendAsync(new SupervisorRequest(SupervisorCommandType.GetSnapshot), TimeSpan.FromSeconds(2));
+        return response.Snapshot?.Applications.FirstOrDefault(a => a.Id == definition.Id);
+    }
+
+    private async Task<string?> StopForEditAsync(ApplicationDefinition definition)
+    {
+        var client = definition.Privilege == PrivilegeLevel.Normal ? _normalClient : _adminClient;
+        var response = await client.SendAsync(new SupervisorRequest(SupervisorCommandType.StopApplication, definition.Id));
+        await RefreshDashboardAsync();
+        return response.Success ? null : response.Error;
+    }
+
+    private static string? DuplicateMessage(IEnumerable<ApplicationDefinition> applications, ApplicationDefinition candidate)
+    {
+        var duplicate = FindDuplicateApplication(applications, candidate);
+        return duplicate is null ? null : Localization.F("DuplicateApplicationPrompt", duplicate.Name, duplicate.ExecutablePath);
     }
 
     private static ApplicationDefinition? FindDuplicateApplication(
