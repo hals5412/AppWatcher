@@ -183,7 +183,10 @@ Default columns:
 - Privilege
 - PID
 - Uptime
-- Restarts in current protection window
+- Automatic restarts in the last 24 hours (the restart-loop protection count is shown as the cell tooltip)
+- Automatic restarts in total within the event retention period
+
+Restart counts are aggregated from `ProcessStartRequested` events with reason `AutomaticRestart` in the event database, so they survive AppWatcher restarts. These events are always recorded, regardless of the application's log level. The event log window opens with the last 7 days selected.
 - Last event
 - Last reason
 - Executable

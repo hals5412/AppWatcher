@@ -64,7 +64,8 @@ internal sealed class EventLogForm : Form
         _period.Items.Add(new LocalizedOption<TimeSpan?>(TimeSpan.FromDays(7), Localization.T("Period7Days")));
         _period.Items.Add(new LocalizedOption<TimeSpan?>(TimeSpan.FromDays(30), Localization.T("Period30Days")));
         _period.Items.Add(new LocalizedOption<TimeSpan?>(null, Localization.T("All")));
-        _period.SelectedIndex = 0;
+        // ログはAppWatcherを再起動しても残るため、既定で直近1週間を表示する。
+        _period.SelectedIndex = 1;
         filter.Controls.Add(_period);
         var refresh = new Button { Text = Localization.T("ButtonRefresh"), AutoSize = true, Margin = new Padding(12, 2, 3, 0) };
         refresh.Click += async (_, _) => await RefreshAsync();

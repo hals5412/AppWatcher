@@ -105,9 +105,6 @@
   <data name="ColumnReason" xml:space="preserve">
     <value>理由</value>
   </data>
-  <data name="ColumnRestarts" xml:space="preserve">
-    <value>再起動回数</value>
-  </data>
   <data name="ColumnStatus" xml:space="preserve">
     <value>状態</value>
   </data>
@@ -1027,5 +1024,17 @@ AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監�
   </data>
   <data name="ValidationSummary" xml:space="preserve">
     <value>入力内容を確認してください: {0}</value>
+  </data>
+  <data name="ColumnRestarts24h" xml:space="preserve">
+    <value>再起動 24時間</value>
+  </data>
+  <data name="ColumnRestartsTotal" xml:space="preserve">
+    <value>再起動 累計</value>
+  </data>
+  <data name="RestartWindowTooltip" xml:space="preserve">
+    <value>ループ防止の判定中の回数: 直近{1}分間に{0}回（上限{2}回）</value>
+  </data>
+  <data name="RestartsTotalTooltip" xml:space="preserve">
+    <value>ログ保存期間（{0}日）内の自動再起動の回数。AppWatcherを再起動しても数え続けます。</value>
   </data>
 </root>

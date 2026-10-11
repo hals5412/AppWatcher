@@ -105,9 +105,6 @@
   <data name="ColumnReason" xml:space="preserve">
     <value>Reason</value>
   </data>
-  <data name="ColumnRestarts" xml:space="preserve">
-    <value>Restarts</value>
-  </data>
   <data name="ColumnStatus" xml:space="preserve">
     <value>Status</value>
   </data>
@@ -1025,5 +1022,17 @@ Save anyway?</value>
   </data>
   <data name="ValidationSummary" xml:space="preserve">
     <value>Check your input: {0}</value>
+  </data>
+  <data name="ColumnRestarts24h" xml:space="preserve">
+    <value>Restarts (24h)</value>
+  </data>
+  <data name="ColumnRestartsTotal" xml:space="preserve">
+    <value>Restarts (total)</value>
+  </data>
+  <data name="RestartWindowTooltip" xml:space="preserve">
+    <value>Counted by restart-loop protection: {0} in the last {1} minutes (limit {2})</value>
+  </data>
+  <data name="RestartsTotalTooltip" xml:space="preserve">
+    <value>Automatic restarts within the log retention period ({0} days). Counts continue across AppWatcher restarts.</value>
   </data>
 </root>

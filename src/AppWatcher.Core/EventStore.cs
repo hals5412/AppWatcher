@@ -63,6 +63,7 @@ public class EventStore : IEventSink
                 );
                 CREATE INDEX IF NOT EXISTS ix_events_timestamp ON events(timestamp_utc DESC);
                 CREATE INDEX IF NOT EXISTS ix_events_app_timestamp ON events(application_id, timestamp_utc DESC);
+                CREATE INDEX IF NOT EXISTS ix_events_type_reason ON events(event_type, reason_code);
                 """;
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             _initialized = true;
@@ -93,6 +94,41 @@ public class EventStore : IEventSink
         command.Parameters.AddWithValue("$reason", record.ReasonCode);
         command.Parameters.AddWithValue("$details", record.DetailsJson);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    // ホストの再起動をまたいで残る履歴から、アプリごとの自動再起動回数を数える。
+    // 累計はログ保存期間（既定90日）と容量整理の範囲内の値になる。
+    public async Task<IReadOnlyDictionary<Guid, RestartCounts>> GetAutomaticRestartCountsAsync(
+        DateTimeOffset recentSinceUtc,
+        CancellationToken cancellationToken = default)
+    {
+        await InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await using var connection = new SqliteConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT application_id,
+                   SUM(CASE WHEN timestamp_utc >= $since THEN 1 ELSE 0 END),
+                   COUNT(*)
+            FROM events
+            WHERE event_type = $eventType AND reason_code = $reason AND application_id IS NOT NULL
+            GROUP BY application_id;
+            """;
+        command.Parameters.AddWithValue("$since", recentSinceUtc.UtcDateTime.ToString("O"));
+        command.Parameters.AddWithValue("$eventType", AutomaticRestartEvent.EventType);
+        command.Parameters.AddWithValue("$reason", AutomaticRestartEvent.ReasonCode);
+
+        var counts = new Dictionary<Guid, RestartCounts>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            if (Guid.TryParse(reader.GetString(0), out var id))
+            {
+                counts[id] = new RestartCounts(reader.GetInt32(1), reader.GetInt32(2));
+            }
+        }
+        return counts;
     }
 
     public async Task<IReadOnlyList<EventRecord>> QueryAsync(EventQuery query, CancellationToken cancellationToken = default)

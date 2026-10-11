@@ -477,7 +477,8 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
 
         SetState(AppRuntimeState.Starting, "StartRequested", reason);
         _pendingStartup = false;
-        await WriteEventAsync(AppLogLevel.Information, "ProcessStartRequested", reason, new
+        // 自動再起動の記録は再起動回数の集計に使うため、ログレベル設定に関係なく残す。
+        await WriteEventAsync(AppLogLevel.Information, AutomaticRestartEvent.EventType, reason, new
         {
             _definition.ExecutablePath,
             _definition.Arguments,
@@ -485,7 +486,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
             privilege = _definition.Privilege.ToString(),
             launchMode = "Interactive",
             childProcesses = _definition.ChildProcessPolicy.ToString()
-        }, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken, alwaysRecord: reason == AutomaticRestartEvent.ReasonCode).ConfigureAwait(false);
 
         try
         {
@@ -627,7 +628,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
             }, CancellationToken.None).ConfigureAwait(false);
 
             ++_automaticRestartCount;
-            ScheduleRestartLocked("AutomaticRestart");
+            ScheduleRestartLocked(AutomaticRestartEvent.ReasonCode);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
         {
@@ -880,9 +881,9 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
         _lastReason = reason;
     }
 
-    private Task WriteEventAsync(AppLogLevel level, string eventType, string reasonCode, object? details, CancellationToken cancellationToken)
+    private Task WriteEventAsync(AppLogLevel level, string eventType, string reasonCode, object? details, CancellationToken cancellationToken, bool alwaysRecord = false)
     {
-        if (level < _definition.LogLevel) return Task.CompletedTask;
+        if (!alwaysRecord && level < _definition.LogLevel) return Task.CompletedTask;
         return _events.WriteAsync(EventRecordFactory.Create(_definition, level, eventType, reasonCode, details), cancellationToken);
     }
 
@@ -913,7 +914,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
         if (permission.Allowed)
         {
             ++_automaticRestartCount;
-            ScheduleRestartLocked("AutomaticRestart");
+            ScheduleRestartLocked(AutomaticRestartEvent.ReasonCode);
         }
         else if (permission.BackoffUntilUtc is { } until)
         {

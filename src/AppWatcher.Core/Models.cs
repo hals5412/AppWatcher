@@ -192,4 +192,13 @@ public sealed record EventQuery(
     DateTimeOffset? SinceUtc = null,
     int Limit = 500);
 
+public sealed record RestartCounts(int Recent, int Total);
+
+// AppWatcherが自動再起動のために起動した記録。再起動回数の集計に使う。
+public static class AutomaticRestartEvent
+{
+    public const string EventType = "ProcessStartRequested";
+    public const string ReasonCode = "AutomaticRestart";
+}
+
 public sealed record ConfigurationValidationResult(bool Success, IReadOnlyList<string> Messages);

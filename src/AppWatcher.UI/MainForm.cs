@@ -40,6 +40,10 @@ internal sealed class MainForm : Form
     private (DateTime LastWriteUtc, long Length) _dashboardConfigStamp;
     private bool _wasMinimized;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
+    private readonly EventStore _eventStore = new();
+    private IReadOnlyDictionary<Guid, RestartCounts> _restartCounts = new Dictionary<Guid, RestartCounts>();
+    private DateTimeOffset _nextRestartCountsUtc;
+    private int _restartCountsSignature = -1;
 
     private HostSnapshot? _normalHost;
     private HostSnapshot? _adminHost;
@@ -245,10 +249,20 @@ internal sealed class MainForm : Form
         pidColumn.DefaultCellStyle.NullValue = "-";
         _grid.Columns.Add(pidColumn);
         _grid.Columns.Add(Column("Uptime", Localization.T("ColumnUptime"), 105));
-        _grid.Columns.Add(Column("Restarts", Localization.T("ColumnRestarts"), 95));
+        // 再起動回数はログDBの記録から数え、AppWatcherの再起動をまたいで表示する。
+        _grid.Columns.Add(CountColumn("Restarts24h", Localization.T("ColumnRestarts24h"), 125));
+        _grid.Columns.Add(CountColumn("RestartsTotal", Localization.T("ColumnRestartsTotal"), 115));
         _grid.Columns.Add(Column("LastEvent", Localization.T("ColumnLastEvent"), 170));
         _grid.Columns.Add(Column("Reason", Localization.T("ColumnReason"), 210));
         _grid.Columns.Add(Column("Executable", Localization.T("ColumnExecutable"), 420));
+    }
+
+    private static DataGridViewTextBoxColumn CountColumn(string name, string header, int width)
+    {
+        var column = Column(name, header, width);
+        column.ValueType = typeof(int);
+        column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+        return column;
     }
 
     private static DataGridViewTextBoxColumn Column(string name, string header, int width) => new()
@@ -1053,6 +1067,8 @@ internal sealed class MainForm : Form
             // catches up (for example, while a save/reload is in flight).
             apps.AddRange(snapshots.Values);
 
+            await RefreshRestartCountsAsync(apps);
+
             // 通信待ちの間に利用者が変更したソート・選択も、更新直前に取得する。
             var selectedId = SelectedSnapshot()?.Id;
             var sortedColumn = _grid.SortedColumn;
@@ -1068,13 +1084,21 @@ internal sealed class MainForm : Form
                     Localization.PrivilegeText(app.Privilege),
                     app.ProcessId!, // 未起動時はnullを保持し、NullValueで表示する。
                     FormatUptime(app.Uptime),
-                    app.RestartCountInWindow,
+                    _restartCounts.TryGetValue(app.Id, out var recentCounts) ? recentCounts.Recent : 0,
+                    _restartCounts.TryGetValue(app.Id, out var totalCounts) ? totalCounts.Total : 0,
                     Localization.EventCode(app.LastEvent),
                     Localization.ReasonCode(app.LastReason),
                     app.ExecutablePath);
                 var row = _grid.Rows[rowIndex];
                 row.Tag = app;
                 ApplyStateStyle(row, app.State);
+                var definition = config.Applications.FirstOrDefault(a => a.Id == app.Id);
+                if (definition?.RestartLoopProtectionEnabled == true)
+                {
+                    // ループ防止が判定に使う直近の回数は、ホスト起動後のメモリ上の値なので補足として出す。
+                    row.Cells["Restarts24h"].ToolTipText = Localization.F("RestartWindowTooltip", app.RestartCountInWindow, definition.RestartWindowMinutes, definition.MaxRestarts);
+                }
+                row.Cells["RestartsTotal"].ToolTipText = Localization.F("RestartsTotalTooltip", config.Global.EventRetentionDays);
 
             }
 
@@ -1104,6 +1128,27 @@ internal sealed class MainForm : Form
         {
             _refreshGate.Release();
         }
+    }
+
+    // 回数の集計はDBを読むため、一定間隔か、いずれかのアプリが自動再起動したときだけ行う。
+    private async Task RefreshRestartCountsAsync(IReadOnlyList<ApplicationSnapshot> apps)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var signature = apps.Sum(a => a.AutomaticRestartCount);
+        if (now < _nextRestartCountsUtc && signature == _restartCountsSignature) return;
+
+        try
+        {
+            _restartCounts = await _eventStore.GetAutomaticRestartCountsAsync(now.AddHours(-24));
+        }
+        catch
+        {
+            // DBを読めない場合は前回の値で表示を続ける。
+        }
+
+        // 再起動直後は記録の書き込みが少し遅れるため、変化があったときは早めに読み直す。
+        _nextRestartCountsUtc = now + (signature == _restartCountsSignature ? TimeSpan.FromSeconds(30) : TimeSpan.FromSeconds(5));
+        _restartCountsSignature = signature;
     }
 
     // 定期更新のたびに設定ファイルのロック・解析をしないよう、変更があったときだけ読み直す。
