@@ -627,7 +627,7 @@ Both run only in your logged-on desktop session, avoiding Session 0 so child GUI
     <value>Unresponsive</value>
   </data>
   <data name="SummaryFormat" xml:space="preserve">
-    <value>Healthy {0}    Paused {1}    Problems {2}    Total {3}</value>
+    <value>Healthy {0}    Paused {1}    Disabled {4}    Problems {2}    Total {3}</value>
   </data>
   <data name="TabAdvanced" xml:space="preserve">
     <value>Advanced</value>
@@ -1034,5 +1034,25 @@ Save anyway?</value>
   </data>
   <data name="RestartsTotalTooltip" xml:space="preserve">
     <value>Automatic restarts within the log retention period ({0} days). Counts continue across AppWatcher restarts.</value>
+  </data>
+  <data name="State_Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Reason_MonitoringEnabled" xml:space="preserve">
+    <value>Monitoring enabled</value>
+  </data>
+  <data name="MenuDisableMonitoring" xml:space="preserve">
+    <value>Disable monitoring (kept after restart)</value>
+  </data>
+  <data name="MenuEnableMonitoring" xml:space="preserve">
+    <value>Enable monitoring</value>
+  </data>
+  <data name="DisableMonitoringConfirm" xml:space="preserve">
+    <value>Disable monitoring for {0}?
+
+- It will not be restarted when it exits
+- It stays disabled after AppWatcher or Windows restarts
+- The application itself keeps running (use Stop if needed)
+- The registration is kept</value>
   </data>
 </root>

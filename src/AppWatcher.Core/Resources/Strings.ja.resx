@@ -480,7 +480,7 @@
     <value>手動停止</value>
   </data>
   <data name="Reason_MonitoringDisabled" xml:space="preserve">
-    <value>監視が無効</value>
+    <value>監視を無効に設定</value>
   </data>
   <data name="Reason_MonitoringPaused" xml:space="preserve">
     <value>監視が一時停止中</value>
@@ -627,7 +627,7 @@
     <value>応答なし</value>
   </data>
   <data name="SummaryFormat" xml:space="preserve">
-    <value>正常 {0}    監視停止 {1}    問題 {2}    合計 {3}</value>
+    <value>正常 {0}    監視停止 {1}    無効 {4}    問題 {2}    合計 {3}</value>
   </data>
   <data name="TabAdvanced" xml:space="preserve">
     <value>詳細設定</value>
@@ -1036,5 +1036,27 @@ AppWatcher v1 は実行ファイルのパスごとに1インスタンスを監�
   </data>
   <data name="RestartsTotalTooltip" xml:space="preserve">
     <value>ログ保存期間（{0}日）内の自動再起動の回数。AppWatcherを再起動しても数え続けます。</value>
+  </data>
+  <data name="State_Disabled" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="Reason_MonitoringEnabled" xml:space="preserve">
+    <value>監視を有効に設定</value>
+  </data>
+  <data name="MenuDisableMonitoring" xml:space="preserve">
+    <value>監視を無効にする（再起動後も維持）</value>
+  </data>
+  <data name="MenuEnableMonitoring" xml:space="preserve">
+    <value>監視を有効にする</value>
+  </data>
+  <data name="DisableMonitoringConfirm" xml:space="preserve">
+    <value>{0} の監視を無効にします。
+
+・終了しても再起動しません
+・AppWatcherやPCを再起動しても無効のままです
+・アプリ自体は終了しません（必要なら「停止」を使ってください）
+・登録内容は残ります
+
+無効にしますか？</value>
   </data>
 </root>

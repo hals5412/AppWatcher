@@ -157,6 +157,10 @@ Global maintenance mode offers equivalent controls.
 
 A pause stops automatic supervision actions but does not terminate a currently running target.
 
+### Disabling monitoring
+
+`monitoringEnabled: false` keeps the registration but turns monitoring off persistently, unlike a pause, which is held in memory and ends when AppWatcher restarts. A disabled application is shown with the `Disabled` state, is not counted as paused in the tray, is not started, restarted or hang-checked, and is excluded from periodic external-process discovery. Disabling never terminates a running application. The dashboard context menu and the Pause menu toggle the setting directly. Re-enabling behaves like Resume: if the application exited while disabled and was not stopped manually, it is started according to its restart policy.
+
 ## 9. Logging
 
 SQLite is used for structured state/action history. WAL mode and normal synchronous mode are used to reduce contention and write overhead.

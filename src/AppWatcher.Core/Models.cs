@@ -29,7 +29,9 @@ public enum AppRuntimeState
     Unresponsive,
     Restarting,
     Backoff,
-    Failed
+    Failed,
+    // 設定で監視を無効にしたアプリ。一時停止と違い、AppWatcherを再起動しても続く。
+    Disabled
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

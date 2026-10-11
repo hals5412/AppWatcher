@@ -28,6 +28,8 @@ internal sealed class MainForm : Form
     private readonly ToolStripMenuItem _contextRestartItem = new();
     private readonly ToolStripMenuItem _contextPauseItem = new();
     private readonly ToolStripMenuItem _contextResumeItem = new();
+    private readonly ToolStripMenuItem _contextToggleMonitoringItem = new();
+    private readonly ToolStripMenuItem _pauseMenuToggleMonitoringItem = new();
 
     private readonly Label _summary = new();
     private readonly Label _hostStatus = new();
@@ -410,6 +412,11 @@ internal sealed class MainForm : Form
             Localization.T("ButtonResume"),
             async (_, _) => await SendSelectedAsync(SupervisorCommandType.ResumeApplication));
         _rowContextMenu.Items.Add(_contextResumeItem);
+        ConfigureContextItem(
+            _contextToggleMonitoringItem,
+            Localization.T("MenuDisableMonitoring"),
+            async (_, _) => await ToggleMonitoringAsync());
+        _rowContextMenu.Items.Add(_contextToggleMonitoringItem);
 
         _rowContextMenu.Items.Add(new ToolStripSeparator());
         _rowContextMenu.Items.Add(
@@ -522,6 +529,9 @@ internal sealed class MainForm : Form
         pauseMenu.Items.Add(Localization.T("Duration1Hour"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(1)));
         pauseMenu.Items.Add(Localization.T("Duration4Hours"), null, async (_, _) => await PauseSelectedAsync(TimeSpan.FromHours(4)));
         pauseMenu.Items.Add(Localization.T("DurationIndefinitely"), null, async (_, _) => await PauseSelectedAsync(null));
+        pauseMenu.Items.Add(new ToolStripSeparator());
+        _pauseMenuToggleMonitoringItem.Click += async (_, _) => await ToggleMonitoringAsync();
+        pauseMenu.Items.Add(_pauseMenuToggleMonitoringItem);
         _pauseButton.Click += (_, _) => pauseMenu.Show(_pauseButton, new Point(0, _pauseButton.Height));
         panel.Controls.Add(_pauseButton);
 
@@ -567,7 +577,8 @@ internal sealed class MainForm : Form
         var running = selected?.ProcessId is not null;
         var unavailable = !hasSelection || state == AppRuntimeState.Unknown;
         var transitional = state is AppRuntimeState.Starting or AppRuntimeState.Restarting;
-        var paused = state == AppRuntimeState.Paused;
+        // 無効のアプリは起動・再起動・一時停止の対象にしない（停止だけは動作中なら可能）。
+        var paused = state is AppRuntimeState.Paused or AppRuntimeState.Disabled;
         var globalMaintenance = selected is not null &&
             (selected.Privilege == PrivilegeLevel.Administrator
                 ? _adminHost?.MaintenanceActive == true
@@ -624,6 +635,38 @@ internal sealed class MainForm : Form
         _contextRestartItem.Enabled = canRestart;
         _contextPauseItem.Enabled = canPause;
         _contextResumeItem.Enabled = canResume;
+
+        var toggleText = selected?.MonitoringEnabled == false
+            ? Localization.T("MenuEnableMonitoring")
+            : Localization.T("MenuDisableMonitoring");
+        foreach (var item in new[] { _contextToggleMonitoringItem, _pauseMenuToggleMonitoringItem })
+        {
+            item.Text = toggleText;
+            item.Enabled = hasSelection;
+        }
+    }
+
+    // 設定の「監視を有効にする」を切り替える。一時停止と違い、AppWatcherを再起動しても維持される。
+    private async Task ToggleMonitoringAsync()
+    {
+        var selected = SelectedSnapshot();
+        if (selected is null) return;
+        var enable = !selected.MonitoringEnabled;
+        if (!enable && MessageBox.Show(this, Localization.F("DisableMonitoringConfirm", selected.Name), "AppWatcher",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+
+        ApplicationDefinition? updated = null;
+        if (!await TryUpdateConfigurationAsync(latest =>
+        {
+            var definition = latest.Applications.FirstOrDefault(a => a.Id == selected.Id)
+                ?? throw new InvalidOperationException("Application was removed.");
+            definition.MonitoringEnabled = enable;
+            updated = definition;
+        })) return;
+
+        if (updated is not null) await EnsureHostForDefinitionAsync(updated);
+        await ReloadHostsAsync();
+        await RefreshDashboardAsync();
     }
 
     private static Control Spacer() => new Panel { Width = 12, Height = 32 };
@@ -1118,8 +1161,9 @@ internal sealed class MainForm : Form
 
             var healthy = apps.Count(a => a.State == AppRuntimeState.Healthy);
             var paused = apps.Count(a => a.State == AppRuntimeState.Paused);
+            var disabled = apps.Count(a => a.State == AppRuntimeState.Disabled);
             var problems = apps.Count(a => a.State is AppRuntimeState.Failed or AppRuntimeState.Backoff or AppRuntimeState.Unresponsive or AppRuntimeState.Unknown);
-            _summary.Text = Localization.F("SummaryFormat", healthy, paused, problems, apps.Count);
+            _summary.Text = Localization.F("SummaryFormat", healthy, paused, problems, apps.Count, disabled);
             UpdateHostStatus(normal.Error, admin.Error);
             UpdateStartupSelfCheck(config);
             UpdateCommandAvailability();
@@ -1222,6 +1266,7 @@ internal sealed class MainForm : Form
             AppRuntimeState.Failed or AppRuntimeState.Backoff => Color.DarkRed,
             AppRuntimeState.Unresponsive => Color.DarkOrange,
             AppRuntimeState.Paused => Color.DimGray,
+            AppRuntimeState.Disabled => Color.Gray,
             AppRuntimeState.Unknown => Color.DarkGoldenrod,
             _ => SystemColors.ControlText
         };

@@ -90,13 +90,22 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
         {
             ValidateUpdateLocked(next);
             if (System.Text.Json.JsonSerializer.Serialize(_definition, JsonDefaults.Options) == System.Text.Json.JsonSerializer.Serialize(next, JsonDefaults.Options)) return;
+            var wasDisabled = !_definition.MonitoringEnabled;
             StopHangMonitor();
             await _hangTask.ConfigureAwait(false);
             _definition = Clone(next);
             _restartLimiter.UpdateDefinition(_definition);
-            if (_process is not null && !HasExited(_process)) StartHangMonitor(_process);
+            var running = _process is not null && !HasExited(_process);
+            if (running) StartHangMonitor(_process!);
             if (IsPausedEffective) { ++_restartGeneration; SetState(AppRuntimeState.Paused, "MonitoringPaused", "Configuration"); }
-            else if (_process is not null && !HasExited(_process)) SetState(AppRuntimeState.Healthy, "Attached", "Configuration");
+            else if (running) SetState(AppRuntimeState.Healthy, "Attached", "Configuration");
+            else if (wasDisabled)
+            {
+                // 無効の間に終了していた場合は、監視再開と同じ判断で起動し直す。
+                if (!_intentionalStop && (_pendingStartup || (_pendingRecovery && PolicyAllowsRestart())))
+                    await RecoverPendingLockedAsync(token).ConfigureAwait(false);
+                else SetState(AppRuntimeState.Stopped, "MonitoringEnabled", "Configuration");
+            }
         }
         finally { Volatile.Write(ref _snapshot, BuildSnapshot()); _gate.Release(); }
     }
@@ -140,7 +149,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
         get
         {
             var process = _process;
-            return !_disposed && _definition.AttachExisting && !_intentionalStop && (process is null || HasExited(process));
+            return !_disposed && _definition.AttachExisting && _definition.MonitoringEnabled && !_intentionalStop && (process is null || HasExited(process));
         }
     }
 
@@ -152,7 +161,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_disposed || !_definition.AttachExisting || _intentionalStop || _shutdownActive()) return false;
+            if (_disposed || !_definition.AttachExisting || !_definition.MonitoringEnabled || _intentionalStop || _shutdownActive()) return false;
             if (_process is not null && !HasExited(_process)) return false;
 
             IManagedProcess? existing;
@@ -414,11 +423,14 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
             }
         }
 
+        var disabled = !_definition.MonitoringEnabled;
         return new ApplicationSnapshot(
             _definition.Id,
             _definition.Name,
             _definition.Privilege,
-            _intentionalStop ? (pid is null ? AppRuntimeState.Stopped : AppRuntimeState.Failed) : IsPausedEffective && _state is not AppRuntimeState.Backoff ? AppRuntimeState.Paused : _state,
+            disabled ? AppRuntimeState.Disabled
+                : _intentionalStop ? (pid is null ? AppRuntimeState.Stopped : AppRuntimeState.Failed)
+                : IsPausedEffective && _state is not AppRuntimeState.Backoff ? AppRuntimeState.Paused : _state,
             pid,
             _processStartedUtc,
             uptime,
@@ -426,7 +438,7 @@ public sealed class ApplicationSupervisor : IAsyncDisposable
             _pauseUntilUtc,
             _pauseIndefinite,
             _lastEvent,
-            _intentionalStop && pid is null ? "IntentionalStop" : _lastReason,
+            disabled ? "MonitoringDisabled" : _intentionalStop && pid is null ? "IntentionalStop" : _lastReason,
             _definition.ExecutablePath,
             _definition.MonitoringEnabled,
             _definition.DetectHangs,
